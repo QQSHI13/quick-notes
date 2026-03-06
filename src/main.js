@@ -40,14 +40,39 @@ function configureMarked() {
   return true;
 }
 
+// Wait for marked to be available
+function waitForMarked(maxAttempts = 50) {
+  return new Promise((resolve) => {
+    let attempts = 0;
+    const check = () => {
+      attempts++;
+      if (typeof marked !== 'undefined') {
+        resolve(true);
+      } else if (attempts >= maxAttempts) {
+        resolve(false);
+      } else {
+        setTimeout(check, 100);
+      }
+    };
+    check();
+  });
+}
+
 // Initialize
 async function init() {
   try {
     currentWindow = getCurrentWindow();
     
+    // Wait for marked to be available (handles CDN loading delay)
+    const markedLoaded = await waitForMarked();
+    if (!markedLoaded) {
+      setStatus('Error: Markdown library failed to load', 'error');
+      return;
+    }
+    
     // Configure marked
     if (!configureMarked()) {
-      setStatus('Error: Markdown library failed to load', 'error');
+      setStatus('Error: Failed to configure markdown', 'error');
       return;
     }
     
@@ -197,8 +222,8 @@ function handleKeyDown(e) {
     return;
   }
   
-  // Ctrl+Shift+C: Code block (check for lowercase 'c' with shift)
-  if (ctrl && shift && e.key === 'c') {
+  // Ctrl+Shift+C: Code block (check for uppercase 'C' since Shift is held)
+  if (ctrl && shift && e.key === 'C') {
     e.preventDefault();
     applyFormat('codeblock');
     return;
@@ -232,8 +257,8 @@ function handleKeyDown(e) {
     return;
   }
   
-  // Ctrl+Shift+Q: Quote
-  if (ctrl && shift && e.key === 'q') {
+  // Ctrl+Shift+Q: Quote (check for uppercase 'Q' since Shift is held)
+  if (ctrl && shift && e.key === 'Q') {
     e.preventDefault();
     applyFormat('quote');
     return;

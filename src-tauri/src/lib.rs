@@ -6,12 +6,6 @@ use tauri::{
 use tauri_plugin_global_shortcut::{Code, Modifiers, ShortcutState, GlobalShortcutExt};
 use chrono::Local;
 use dirs;
-use std::sync::Mutex;
-
-// Store the auto-save timeout in app state for better management
-pub struct AppState {
-    pub auto_save_timer: Mutex<Option<std::time::Instant>>,
-}
 
 // Save note to ~/notes/ with timestamp filename
 #[tauri::command]
@@ -85,9 +79,6 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        .manage(AppState {
-            auto_save_timer: Mutex::new(None),
-        })
         .invoke_handler(tauri::generate_handler![save_note, get_notes_dir])
         .setup(|app| {
             // Create menu items for the tray

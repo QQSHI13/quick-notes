@@ -9,10 +9,15 @@
     <!-- Load marked from CDN with local fallback -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
-      // Fallback if CDN fails
-      if (typeof marked === 'undefined') {
-        document.write('<script src="./marked.min.js"><\/script>');
-      }
+      // Wait for scripts to load then check if marked is available
+      window.addEventListener('load', function() {
+        if (typeof marked === 'undefined') {
+          // CDN failed, load local fallback
+          var script = document.createElement('script');
+          script.src = './marked.min.js';
+          document.head.appendChild(script);
+        }
+      });
     </script>
     <script type="module" src="main.js" defer></script>
   </head>
