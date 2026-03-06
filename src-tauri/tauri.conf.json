@@ -35,7 +35,7 @@
         "connect-src": "'self'"
       }
     },
-    "trayIcon": null,
+    "trayIcon": null
   },
   "bundle": {
     "active": true,
