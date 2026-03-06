@@ -3,6 +3,7 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder},
     Manager, Emitter, 
 };
+use tauri_plugin_global_shortcut::GlobalShortcutExt;
 use chrono::Local;
 use dirs;
 
