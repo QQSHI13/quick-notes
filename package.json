@@ -1,0 +1,15 @@
+{
+  "name": "quick-notes",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "A quick note-taking app with global hotkey support",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}
