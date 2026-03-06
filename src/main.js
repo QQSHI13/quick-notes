@@ -22,6 +22,7 @@ let isUpdating = false;
 let scrollTimeout = null;
 let statusTimeout = null;
 let isPreviewVisible = true;
+let isSourceMode = false;
 
 // Configure marked for GitHub-flavored markdown
 function configureMarked() {
@@ -553,22 +554,19 @@ async function updateAlwaysOnTopButton() {
 }
 
 function togglePreview() {
-  isPreviewVisible = !isPreviewVisible;
+  isSourceMode = !isSourceMode;
   
-  if (isPreviewVisible) {
-    // Show both panes side by side
-    editorInput.style.width = '50%';
-    editorInput.style.display = 'block';
-    editorPreview.style.width = '50%';
-    editorPreview.style.display = 'block';
-    updatePreview();
-    setTemporaryStatus('Split view', 'normal', 1500);
+  if (isSourceMode) {
+    // Source mode: hide preview, show raw markdown in editor
+    editorPreview.style.visibility = 'hidden';
+    editorPreview.style.opacity = '0';
+    setTemporaryStatus('Source mode', 'normal', 1500);
   } else {
-    // Show only editor
-    editorInput.style.width = '100%';
-    editorInput.style.display = 'block';
-    editorPreview.style.display = 'none';
-    setTemporaryStatus('Editor only', 'normal', 1500);
+    // Preview mode: show rendered markdown
+    editorPreview.style.visibility = 'visible';
+    editorPreview.style.opacity = '1';
+    updatePreview();
+    setTemporaryStatus('Preview mode', 'normal', 1500);
   }
 }
 
