@@ -1,18 +1,16 @@
 # Quick Notes (qnotes)
 
-A lightweight, fast desktop note-taking app with global hotkey support. Built with Tauri for Windows (with cross-platform support).
-
-![Quick Notes](screenshot.png)
+A lightweight, fast desktop note-taking app with global hotkey support. Built with Tauri for Windows.
 
 ## Features
 
-- ⚡ **Global Hotkey**: Press `Ctrl+Shift+N` anywhere to instantly open a new note
+- ⚡ **Global Hotkey**: Press `Ctrl+Shift+N` anywhere to instantly open
 - 🪟 **Always on Top**: Floating window stays visible while you work
-- 📝 **Markdown Support**: Type notes in markdown with live preview
-- 💾 **Auto-save**: Notes automatically saved to `~/notes/` with timestamp filenames
-- 🎯 **System Tray**: Minimize to system tray, right-click for quick actions
-- 🌙 **Dark Theme**: Easy on the eyes, matches modern dev tools
-- 🎨 **Clean UI**: Minimal, distraction-free interface
+- 📝 **GitHub-Flavored Markdown**: Write notes with full GFM support
+- 🎨 **GitHub Dark Theme**: Colors matching GitHub's dark mode
+- 💾 **Auto-save**: Notes saved to `~/notes/` with timestamp filenames
+- 🎯 **System Tray**: Minimize to tray, right-click for menu
+- ✨ **Live Preview**: See formatted markdown as you type (MarkText-style)
 
 ## Installation
 
@@ -37,7 +35,7 @@ A lightweight, fast desktop note-taking app with global hotkey support. Built wi
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/quick-notes.git
+git clone https://github.com/QQSHI13/quick-notes.git
 cd quick-notes
 
 # Install dependencies
