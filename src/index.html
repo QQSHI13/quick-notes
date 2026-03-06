@@ -22,7 +22,7 @@
       <!-- Toolbar -->
       <div class="toolbar">
         <div class="toolbar-left">
-          <button id="new-note-btn" class="btn" title="New Note">
+          <button id="new-note-btn" class="btn" title="New Note (Ctrl+N)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
@@ -40,15 +40,37 @@
             Save
           </button>
         </div>
-        <div class="toolbar-right">
-          <button id="preview-toggle" class="btn" title="Toggle Preview">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-            Preview
+        
+        <!-- Format toolbar -->
+        <div class="format-toolbar">
+          <button class="format-btn" data-action="bold" title="Bold (Ctrl+B)">
+            <strong>B</strong>
           </button>
-          <button id="always-on-top-btn" class="btn active" title="Always on Top">
+          <button class="format-btn" data-action="italic" title="Italic (Ctrl+I)">
+            <em>I</em>
+          </button>
+          <button class="format-btn" data-action="code" title="Code (Ctrl+`)">
+            &lt;/&gt;
+          </button>
+          <button class="format-btn" data-action="link" title="Link (Ctrl+K)">
+            🔗
+          </button>
+          <button class="format-btn" data-action="codeblock" title="Code Block (Ctrl+Shift+C)">
+            □
+          </button>
+          <button class="format-btn" data-action="heading" title="Heading (Ctrl+H)">
+            H
+          </button>
+          <button class="format-btn" data-action="quote" title="Quote (Ctrl+Shift+Q)">
+            "
+          </button>
+          <button class="format-btn" data-action="list" title="List (Ctrl+L)">
+            •
+          </button>
+        </div>
+        
+        <div class="toolbar-right">
+          <button id="always-on-top-btn" class="btn active" title="Always on Top (Ctrl+P)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="4 14 10 14 10 20"></polyline>
               <polyline points="20 10 14 10 14 4"></polyline>
@@ -60,22 +82,20 @@
         </div>
       </div>
       
-      <!-- Main content area -->
+      <!-- Main content area - MarkText style WYSIWYG editor -->
       <div class="content">
-        <!-- Editor -->
-        <div id="editor-container" class="panel">
-          <textarea id="editor" placeholder="Type your note here... (Markdown supported)"></textarea>
-        </div>
-        
-        <!-- Preview -->
-        <div id="preview-container" class="panel hidden">
-          <div id="preview"></div>
+        <div class="editor-container">
+          <textarea id="editor-input" placeholder="Type your note here..." spellcheck="false"></textarea>
+          <div id="editor-preview"></div>
         </div>
       </div>
       
       <!-- Status bar -->
       <div class="status-bar">
-        <span id="status-text">Ready</span>
+        <span id="status-text">
+          <span class="status-indicator" id="status-dot"></span>
+          <span id="status-message">Ready</span>
+        </span>
         <span id="word-count">0 words</span>
       </div>
     </div>

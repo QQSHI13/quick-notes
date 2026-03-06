@@ -1,19 +1,38 @@
-/* Dark Theme Variables */
+/* GitHub Dark Theme (Dark Dimmed / Default Dark) */
 :root {
-  --bg-primary: #1e1e1e;
-  --bg-secondary: #252526;
-  --bg-tertiary: #2d2d30;
-  --bg-hover: #3e3e42;
-  --text-primary: #cccccc;
-  --text-secondary: #858585;
-  --accent-primary: #007acc;
-  --accent-hover: #0098ff;
-  --border-color: #3e3e42;
-  --success-color: #4ec9b0;
-  --warning-color: #ce9178;
-  --title-bar-height: 32px;
-  --toolbar-height: 42px;
-  --status-bar-height: 24px;
+  /* Backgrounds */
+  --bg-canvas: #0d1117;
+  --bg-surface: #161b22;
+  --bg-elevated: #21262d;
+  --bg-overlay: #30363d;
+  
+  /* Text */
+  --text-primary: #c9d1d9;
+  --text-secondary: #8b949e;
+  --text-tertiary: #6e7681;
+  --text-link: #58a6ff;
+  --text-white: #f0f6fc;
+  
+  /* Accents */
+  --accent-blue: #58a6ff;
+  --accent-green: #238636;
+  --accent-red: #da3633;
+  --accent-yellow: #d29922;
+  --accent-purple: #8957e5;
+  
+  /* Borders */
+  --border-default: #30363d;
+  --border-muted: #21262d;
+  --border-accent: #58a6ff;
+  
+  /* Status */
+  --status-success: #3fb950;
+  --status-attention: #d29922;
+  
+  /* Sizing */
+  --title-bar-height: 38px;
+  --toolbar-height: 44px;
+  --status-bar-height: 28px;
 }
 
 * {
@@ -24,15 +43,11 @@
 
 html, body {
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 14px;
-  background: transparent;
-  overflow: hidden;
-}
-
-body {
-  background: var(--bg-primary);
+  background: var(--bg-canvas);
   color: var(--text-primary);
+  overflow: hidden;
 }
 
 /* App Container */
@@ -40,115 +55,172 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--bg-primary);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  background: var(--bg-canvas);
 }
 
-/* Title Bar */
+/* Title Bar - GitHub style */
 .title-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: var(--title-bar-height);
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-  padding: 0 12px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
+  padding: 0 16px;
   -webkit-app-region: drag;
-  cursor: default;
 }
 
 .app-title {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-white);
   -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-title::before {
+  content: '📝';
+  font-size: 16px;
 }
 
 .window-controls {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   -webkit-app-region: no-drag;
 }
 
 .window-btn {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border: none;
   background: transparent;
   color: var(--text-secondary);
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.15s ease;
 }
 
 .window-btn:hover {
-  background: var(--bg-hover);
+  background: var(--bg-elevated);
   color: var(--text-primary);
 }
 
 .window-btn:last-child:hover {
-  background: #e81123;
+  background: var(--accent-red);
   color: white;
 }
 
-/* Toolbar */
+/* Toolbar - GitHub style */
 .toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: var(--toolbar-height);
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-canvas);
+  border-bottom: 1px solid var(--border-default);
   padding: 0 12px;
-  -webkit-app-region: no-drag;
+  gap: 12px;
 }
 
 .toolbar-left,
 .toolbar-right {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
 .btn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 6px 12px;
-  border: none;
-  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  background: var(--bg-elevated);
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .btn:hover {
-  background: var(--bg-hover);
+  background: var(--bg-overlay);
+  border-color: var(--text-tertiary);
+}
+
+.btn:active {
+  background: var(--bg-surface);
 }
 
 .btn.active {
-  background: var(--accent-primary);
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: white;
 }
 
 .btn.active:hover {
-  background: var(--accent-hover);
+  background: #79b8ff;
+  border-color: #79b8ff;
+}
+
+.btn-primary {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2ea043;
+  border-color: #2ea043;
 }
 
 .btn svg {
   flex-shrink: 0;
 }
 
-.btn-primary {
-  background: var(--accent-primary);
+/* Format toolbar */
+.format-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  border-left: 1px solid var(--border-muted);
+  border-right: 1px solid var(--border-muted);
 }
 
-.btn-primary:hover {
-  background: var(--accent-hover);
+.format-btn {
+  width: 32px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.format-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.format-btn:active {
+  background: var(--bg-overlay);
 }
 
 /* Content Area */
@@ -157,202 +229,384 @@ body {
   display: flex;
   overflow: hidden;
   position: relative;
+  background: var(--bg-canvas);
 }
 
-.panel {
+/* MarkText-style Editor */
+.editor-container {
   flex: 1;
-  height: 100%;
+  position: relative;
   overflow: auto;
+  background: var(--bg-canvas);
 }
 
-.panel.hidden {
-  display: none;
-}
-
-/* Editor */
-#editor {
+/* The text input layer - invisible but functional */
+#editor-input {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: 100%;
+  min-height: 100%;
+  padding: 24px 32px;
   border: none;
   outline: none;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: 'Consolas', 'Monaco', 'Menlo', monospace;
-  font-size: 14px;
-  line-height: 1.6;
-  padding: 16px;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--accent-blue);
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 15px;
+  line-height: 1.8;
   resize: none;
   white-space: pre-wrap;
+  word-wrap: break-word;
+  z-index: 2;
+  overflow: hidden;
 }
 
-#editor::placeholder {
-  color: var(--text-secondary);
+#editor-input::selection {
+  background: rgba(88, 166, 255, 0.3);
 }
 
-/* Preview */
-#preview-container {
-  background: var(--bg-primary);
-  padding: 16px;
+/* The rendered preview layer */
+#editor-preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  min-height: 100%;
+  padding: 24px 32px;
+  pointer-events: none;
+  z-index: 1;
 }
 
-#preview {
+/* GitHub Markdown Styles */
+#editor-preview {
+  font-size: 15px;
+  line-height: 1.8;
   color: var(--text-primary);
-  line-height: 1.6;
 }
 
-#preview h1,
-#preview h2,
-#preview h3,
-#preview h4,
-#preview h5,
-#preview h6 {
-  margin-top: 24px;
+#editor-preview > *:first-child {
+  margin-top: 0 !important;
+}
+
+/* Headings */
+#editor-preview h1,
+#editor-preview h2,
+#editor-preview h3,
+#editor-preview h4,
+#editor-preview h5,
+#editor-preview h6 {
+  margin-top: 28px;
   margin-bottom: 16px;
   font-weight: 600;
-  line-height: 1.25;
-  color: var(--text-primary);
+  line-height: 1.3;
+  color: var(--text-white);
+  letter-spacing: -0.02em;
 }
 
-#preview h1 {
+#editor-preview h1 {
   font-size: 2em;
-  border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border-muted);
 }
 
-#preview h2 {
+#editor-preview h2 {
   font-size: 1.5em;
-  border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border-muted);
 }
 
-#preview h3 {
+#editor-preview h3 {
   font-size: 1.25em;
 }
 
-#preview p {
+#editor-preview h4 {
+  font-size: 1em;
+}
+
+#editor-preview h5 {
+  font-size: 0.875em;
+  color: var(--text-secondary);
+}
+
+#editor-preview h6 {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+
+/* Paragraphs */
+#editor-preview p {
   margin-bottom: 16px;
 }
 
-#preview code {
-  background: var(--bg-tertiary);
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-family: 'Consolas', 'Monaco', 'Menlo', monospace;
-  font-size: 0.9em;
+/* Bold */
+#editor-preview strong,
+#editor-preview b {
+  font-weight: 600;
+  color: var(--text-white);
 }
 
-#preview pre {
-  background: var(--bg-tertiary);
-  padding: 16px;
+/* Italic */
+#editor-preview em,
+#editor-preview i {
+  font-style: italic;
+}
+
+/* Strikethrough */
+#editor-preview del,
+#editor-preview s {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+}
+
+/* Code inline */
+#editor-preview code {
+  background: var(--bg-elevated);
+  padding: 0.2em 0.4em;
   border-radius: 6px;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 85%;
+  color: var(--text-primary);
+}
+
+/* Code blocks */
+#editor-preview pre {
+  background: var(--bg-elevated);
+  padding: 16px;
+  border-radius: 8px;
   overflow-x: auto;
   margin-bottom: 16px;
+  border: 1px solid var(--border-default);
 }
 
-#preview pre code {
+#editor-preview pre code {
   background: none;
   padding: 0;
+  font-size: 85%;
+  line-height: 1.6;
+  color: var(--text-primary);
 }
 
-#preview blockquote {
-  border-left: 4px solid var(--accent-primary);
-  padding-left: 16px;
+/* Links */
+#editor-preview a {
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+
+#editor-preview a:hover {
+  text-decoration: underline;
+}
+
+/* Blockquotes */
+#editor-preview blockquote {
+  border-left: 4px solid var(--accent-blue);
+  padding: 0 16px;
   margin: 0 0 16px 0;
   color: var(--text-secondary);
 }
 
-#preview ul,
-#preview ol {
-  margin-bottom: 16px;
-  padding-left: 24px;
+#editor-preview blockquote p:last-child {
+  margin-bottom: 0;
 }
 
-#preview li {
+/* Lists */
+#editor-preview ul,
+#editor-preview ol {
+  margin-bottom: 16px;
+  padding-left: 28px;
+}
+
+#editor-preview ul {
+  list-style-type: disc;
+}
+
+#editor-preview ol {
+  list-style-type: decimal;
+}
+
+#editor-preview li {
   margin-bottom: 4px;
 }
 
-#preview a {
-  color: var(--accent-primary);
-  text-decoration: none;
+#editor-preview li > p {
+  margin-bottom: 0;
 }
 
-#preview a:hover {
-  text-decoration: underline;
+/* Task lists */
+#editor-preview input[type="checkbox"] {
+  margin-right: 8px;
+  accent-color: var(--accent-blue);
 }
 
-#preview img {
-  max-width: 100%;
-  border-radius: 4px;
-}
-
-#preview table {
+/* Tables */
+#editor-preview table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 16px;
+  display: block;
+  overflow-x: auto;
 }
 
-#preview th,
-#preview td {
-  border: 1px solid var(--border-color);
+#editor-preview th,
+#editor-preview td {
+  border: 1px solid var(--border-default);
   padding: 8px 12px;
   text-align: left;
 }
 
-#preview th {
-  background: var(--bg-tertiary);
+#editor-preview th {
+  background: var(--bg-elevated);
   font-weight: 600;
+  color: var(--text-white);
 }
 
-#preview tr:nth-child(even) {
-  background: var(--bg-secondary);
+#editor-preview tr:nth-child(2n) {
+  background: var(--bg-surface);
 }
 
-#preview hr {
+/* Horizontal rule */
+#editor-preview hr {
   border: none;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-default);
   margin: 24px 0;
+  height: 1px;
+  background: var(--border-default);
 }
 
-/* Status Bar */
+/* Images */
+#editor-preview img {
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-elevated);
+}
+
+/* Syntax highlighting colors (GitHub-style) */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal {
+  color: #ff7b72;
+}
+
+.hljs-string,
+.hljs-attr,
+.hljs-regexp,
+.hljs-variable {
+  color: #a5d6ff;
+}
+
+.hljs-number,
+.hljs-builtin {
+  color: #79c0ff;
+}
+
+.hljs-comment {
+  color: #8b949e;
+}
+
+.hljs-function {
+  color: #d2a8ff;
+}
+
+.hljs-tag {
+  color: #7ee787;
+}
+
+/* Status Bar - GitHub style */
 .status-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: var(--status-bar-height);
-  background: var(--accent-primary);
-  color: white;
-  padding: 0 12px;
-  font-size: 11px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-default);
+  padding: 0 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
-/* Scrollbar Styling */
+#status-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--status-success);
+}
+
+.status-indicator.saving {
+  background: var(--status-attention);
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Scrollbar - GitHub style */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: var(--bg-canvas);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--bg-tertiary);
-  border-radius: 5px;
+  background: var(--bg-elevated);
+  border-radius: 6px;
+  border: 3px solid var(--bg-canvas);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--bg-hover);
+  background: var(--bg-overlay);
 }
 
 /* Selection */
 ::selection {
-  background: var(--accent-primary);
-  color: white;
+  background: rgba(88, 166, 255, 0.3);
+  color: var(--text-white);
 }
 
 /* Focus styles */
-button:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--accent-primary);
+button:focus-visible {
+  outline: 2px solid var(--accent-blue);
   outline-offset: 2px;
+}
+
+/* Empty state */
+#editor-preview:empty::before {
+  content: 'Type something...';
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+/* Cursor/typing indicator */
+.typing-indicator {
+  display: inline-block;
+  width: 2px;
+  height: 1.2em;
+  background: var(--accent-blue);
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+  margin-left: 1px;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Helper text */
+.shortcut-hint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-left: 4px;
 }
