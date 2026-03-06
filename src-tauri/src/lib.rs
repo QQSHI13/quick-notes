@@ -138,8 +138,6 @@ pub fn run() {
                 Code::KeyN
             );
             
-            let app_handle = app.handle().clone();
-            
             // Register the global shortcut with proper error handling
             match app.global_shortcut().register(shortcut) {
                 Ok(_) => {
