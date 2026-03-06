@@ -3,7 +3,6 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder},
     Manager, Emitter, 
 };
-use std::path::PathBuf;
 use chrono::Local;
 use dirs;
 
@@ -61,7 +60,7 @@ pub fn run() {
             // Create the tray icon
             let _tray = TrayIconBuilder::new()
                 .menu(&menu)
-                .menu_on_left_click(false)
+                .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| {
                     match event.id.as_ref() {
                         "open" => {
@@ -86,16 +85,17 @@ pub fn run() {
                 .build(app)?;
             
             // Register global hotkey (Ctrl+Shift+N)
+            use tauri_plugin_global_shortcut::{Shortcut, Code, Modifiers};
+            
+            let shortcut = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyN);
             let app_handle = app.handle().clone();
-            app.handle().plugin(
-                tauri_plugin_global_shortcut::Builder::new()
-                    .with_shortcut("Ctrl+Shift+N", move |app| {
-                        show_window(app);
-                        // Also emit an event to clear the editor
-                        let _ = app.emit("new-note", ());
-                    })
-                    .build(),
-            )?;
+            
+            app.global_shortcut()
+                .on_shortcut(shortcut, move |app, _shortcut, _event| {
+                    show_window(app);
+                    // Also emit an event to clear the editor
+                    let _ = app.emit("new-note", ());
+                })?;
             
             // Hide window instead of closing when X is clicked
             let window = app.get_webview_window("main").unwrap();
