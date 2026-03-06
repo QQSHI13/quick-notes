@@ -1,6 +1,6 @@
 [package]
 name = "quick-notes"
-version = "1.0.7"
+version = "1.0.9"
 description = "A lightweight desktop note-taking app with global hotkey support"
 authors = ["QQ"]
 edition = "2021"
