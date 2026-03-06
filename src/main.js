@@ -185,14 +185,8 @@ async function handleInput() {
 }
 
 function handleScroll() {
-  // Throttle scroll sync
-  if (scrollTimeout) {
-    clearTimeout(scrollTimeout);
-  }
-  
-  scrollTimeout = setTimeout(() => {
-    editorPreview.scrollTop = editorInput.scrollTop;
-  }, 16); // ~60fps
+  // Scroll sync disabled - panes now scroll independently
+  // This provides better UX for split-pane layout
 }
 
 function handleKeyDown(e) {
@@ -560,13 +554,21 @@ async function updateAlwaysOnTopButton() {
 
 function togglePreview() {
   isPreviewVisible = !isPreviewVisible;
-  editorPreview.style.display = isPreviewVisible ? 'block' : 'none';
   
   if (isPreviewVisible) {
+    // Show both panes side by side
+    editorInput.style.width = '50%';
+    editorInput.style.display = 'block';
+    editorPreview.style.width = '50%';
+    editorPreview.style.display = 'block';
     updatePreview();
-    setTemporaryStatus('Preview on', 'normal', 1500);
+    setTemporaryStatus('Split view', 'normal', 1500);
   } else {
-    setTemporaryStatus('Preview off', 'normal', 1500);
+    // Show only editor
+    editorInput.style.width = '100%';
+    editorInput.style.display = 'block';
+    editorPreview.style.display = 'none';
+    setTemporaryStatus('Editor only', 'normal', 1500);
   }
 }
 

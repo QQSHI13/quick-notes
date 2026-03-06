@@ -250,26 +250,24 @@ html, body {
   background: var(--bg-canvas);
 }
 
-/* MarkText-style Editor */
+/* MarkText-style Editor - Split Pane Layout */
 .editor-container {
   flex: 1;
-  position: relative;
-  overflow: auto;
+  display: flex;
+  overflow: hidden;
   background: var(--bg-canvas);
 }
 
-/* The text input layer - invisible but functional */
+/* The text input layer - LEFT SIDE */
 #editor-input {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  min-height: 100%;
+  flex: 1;
+  width: 50%;
+  height: 100%;
   padding: 24px 32px;
   border: none;
   outline: none;
-  background: transparent;
-  color: transparent;
+  background: var(--bg-canvas);
+  color: var(--text-primary);
   caret-color: var(--accent-blue);
   font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
   font-size: 15px;
@@ -277,8 +275,8 @@ html, body {
   resize: none;
   white-space: pre-wrap;
   word-wrap: break-word;
-  z-index: 2;
-  overflow: hidden;
+  overflow-y: auto;
+  border-right: 1px solid var(--border-default);
 }
 
 #editor-input::selection {
@@ -294,16 +292,17 @@ html, body {
   outline-offset: -2px;
 }
 
-/* The rendered preview layer */
+/* The rendered preview layer - RIGHT SIDE */
 #editor-preview {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  min-height: 100%;
+  flex: 1;
+  width: 50%;
+  height: 100%;
   padding: 24px 32px;
-  pointer-events: none;
-  z-index: 1;
+  overflow-y: auto;
+  background: var(--bg-canvas);
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text-primary);
 }
 
 /* GitHub Markdown Styles */
