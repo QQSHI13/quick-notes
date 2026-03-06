@@ -16,6 +16,7 @@
     "core:window:allow-is-always-on-top",
     "core:window:allow-center",
     "core:window:allow-start-dragging",
+    "core:window:allow-is-visible",
     "opener:default",
     "global-shortcut:default",
     "global-shortcut:allow-is-registered",
@@ -27,6 +28,7 @@
     "fs:allow-app-write",
     "fs:allow-home-read",
     "fs:allow-home-write",
-    "fs:allow-home-meta"
+    "fs:allow-home-meta",
+    "fs:allow-write-text-file"
   ]
 }

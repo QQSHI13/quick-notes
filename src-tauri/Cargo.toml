@@ -1,6 +1,6 @@
 [package]
 name = "quick-notes"
-version = "1.0.0"
+version = "1.0.1"
 description = "A lightweight desktop note-taking app with global hotkey support"
 authors = ["QQ"]
 edition = "2021"
@@ -27,3 +27,7 @@ serde_json = "1"
 dirs = "5"
 chrono = "0.4"
 
+[features]
+# This feature is used for production builds or when `devPath` points to the filesystem
+# DO NOT REMOVE!!
+custom-protocol = ["tauri/custom-protocol"]

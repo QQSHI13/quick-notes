@@ -2,10 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="stylesheet" href="styles.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;">
+    <link rel="stylesheet" href="styles.css" />
     <title>Quick Notes</title>
+    <!-- Load marked from CDN with local fallback -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+      // Fallback if CDN fails
+      if (typeof marked === 'undefined') {
+        document.write('<script src="./marked.min.js"><\/script>');
+      }
+    </script>
     <script type="module" src="main.js" defer></script>
   </head>
   <body>
@@ -14,16 +22,16 @@
       <div class="title-bar" data-tauri-drag-region>
         <span class="app-title">Quick Notes</span>
         <div class="window-controls">
-          <button id="minimize-btn" class="window-btn" title="Minimize">−</button>
-          <button id="close-btn" class="window-btn" title="Close (hide to tray)">×</button>
+          <button id="minimize-btn" class="window-btn" title="Minimize (_)" aria-label="Minimize">−</button>
+          <button id="close-btn" class="window-btn" title="Close to tray (Esc)" aria-label="Close to tray">×</button>
         </div>
       </div>
       
       <!-- Toolbar -->
       <div class="toolbar">
         <div class="toolbar-left">
-          <button id="new-note-btn" class="btn" title="New Note (Ctrl+N)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button id="new-note-btn" class="btn" title="New Note (Ctrl+N)" aria-label="New Note">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
               <line x1="12" y1="18" x2="12" y2="12"></line>
@@ -31,8 +39,8 @@
             </svg>
             New
           </button>
-          <button id="save-btn" class="btn btn-primary" title="Save (Ctrl+S)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button id="save-btn" class="btn btn-primary" title="Save (Ctrl+S)" aria-label="Save">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
               <polyline points="17 21 17 13 7 13 7 21"></polyline>
               <polyline points="7 3 7 8 15 8"></polyline>
@@ -42,36 +50,36 @@
         </div>
         
         <!-- Format toolbar -->
-        <div class="format-toolbar">
-          <button class="format-btn" data-action="bold" title="Bold (Ctrl+B)">
+        <div class="format-toolbar" role="toolbar" aria-label="Formatting options">
+          <button class="format-btn" data-action="bold" title="Bold (Ctrl+B)" aria-label="Bold">
             <strong>B</strong>
           </button>
-          <button class="format-btn" data-action="italic" title="Italic (Ctrl+I)">
+          <button class="format-btn" data-action="italic" title="Italic (Ctrl+I)" aria-label="Italic">
             <em>I</em>
           </button>
-          <button class="format-btn" data-action="code" title="Code (Ctrl+`)">
-            &lt;/&gt;
+          <button class="format-btn" data-action="code" title="Code (Ctrl+`)" aria-label="Inline code">
+            </>
           </button>
-          <button class="format-btn" data-action="link" title="Link (Ctrl+K)">
+          <button class="format-btn" data-action="link" title="Link (Ctrl+K)" aria-label="Link">
             🔗
           </button>
-          <button class="format-btn" data-action="codeblock" title="Code Block (Ctrl+Shift+C)">
+          <button class="format-btn" data-action="codeblock" title="Code Block (Ctrl+Shift+C)" aria-label="Code block">
             □
           </button>
-          <button class="format-btn" data-action="heading" title="Heading (Ctrl+H)">
+          <button class="format-btn" data-action="heading" title="Heading (Ctrl+H)" aria-label="Heading">
             H
           </button>
-          <button class="format-btn" data-action="quote" title="Quote (Ctrl+Shift+Q)">
+          <button class="format-btn" data-action="quote" title="Quote (Ctrl+Shift+Q)" aria-label="Quote">
             "
           </button>
-          <button class="format-btn" data-action="list" title="List (Ctrl+L)">
+          <button class="format-btn" data-action="list" title="List (Ctrl+L)" aria-label="List">
             •
           </button>
         </div>
         
         <div class="toolbar-right">
-          <button id="always-on-top-btn" class="btn active" title="Always on Top (Ctrl+P)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button id="always-on-top-btn" class="btn" title="Always on Top (Ctrl+P)" aria-label="Toggle always on top">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <polyline points="4 14 10 14 10 20"></polyline>
               <polyline points="20 10 14 10 14 4"></polyline>
               <line x1="14" y1="10" x2="21" y2="3"></line>
@@ -85,18 +93,23 @@
       <!-- Main content area - MarkText style WYSIWYG editor -->
       <div class="content">
         <div class="editor-container">
-          <textarea id="editor-input" placeholder="Type your note here..." spellcheck="false"></textarea>
-          <div id="editor-preview"></div>
+          <textarea 
+            id="editor-input" 
+            placeholder="Type your note here... (Markdown supported)&#10;&#10;Shortcuts:&#10;• Ctrl+B: Bold&#10;• Ctrl+I: Italic&#10;• Ctrl+K: Link&#10;• Ctrl+S: Save&#10;• Ctrl+N: New&#10;• Ctrl+P: Toggle pin&#10;• Esc: Hide to tray" 
+            spellcheck="false"
+            aria-label="Note editor"
+          ></textarea>
+          <div id="editor-preview" aria-hidden="true"></div>
         </div>
       </div>
       
       <!-- Status bar -->
       <div class="status-bar">
         <span id="status-text">
-          <span class="status-indicator" id="status-dot"></span>
-          <span id="status-message">Ready</span>
+          <span class="status-indicator" id="status-dot" aria-hidden="true"></span>
+          <span id="status-message">Initializing...</span>
         </span>
-        <span id="word-count">0 words</span>
+        <span id="word-count" aria-live="polite">0 words</span>
       </div>
     </div>
   </body>
