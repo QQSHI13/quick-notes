@@ -260,7 +260,7 @@ function handleKeyDown(e) {
   }
   
   // Ctrl+P or Ctrl+Shift+P: Toggle always on top / Toggle preview
-  if (ctrl && e.key === 'p' && !alt) {
+  if (ctrl && (e.key === 'p' || e.key === 'P') && !alt) {
     e.preventDefault();
     if (shift) {
       // Ctrl+Shift+P: Toggle preview visibility

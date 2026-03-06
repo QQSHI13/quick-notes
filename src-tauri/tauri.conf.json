@@ -35,11 +35,7 @@
         "connect-src": "'self'"
       }
     },
-    "trayIcon": {
-      "id": "main-tray",
-      "iconPath": "icons/icon.png",
-      "iconAsTemplate": true
-    }
+    "trayIcon": null,
   },
   "bundle": {
     "active": true,

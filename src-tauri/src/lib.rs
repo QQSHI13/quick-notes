@@ -1,11 +1,14 @@
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder},
-    Manager, Emitter, 
+    Manager, Emitter,
 };
 use tauri_plugin_global_shortcut::{Code, Modifiers, ShortcutState, GlobalShortcutExt};
 use chrono::Local;
 use dirs;
+
+// Load tray icon at compile time
+const TRAY_ICON: &[u8] = include_bytes!("../icons/icon.png");
 
 // Save note to ~/notes/ with timestamp filename
 #[tauri::command]
@@ -102,6 +105,10 @@ pub fn run() {
             
             // Create the tray icon with proper error handling
             let tray_result = TrayIconBuilder::new()
+                .icon(tauri::image::Image::from_bytes(TRAY_ICON).map_err(|e| {
+                    eprintln!("Failed to load tray icon: {}", e);
+                    e
+                })?)
                 .menu(&menu)
                 .show_menu_on_left_click(false)  // Right-click shows menu
                 .on_menu_event(|app, event| {
