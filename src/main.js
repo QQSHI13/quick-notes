@@ -13,6 +13,7 @@ const newNoteBtn = document.getElementById('new-note-btn');
 const minimizeBtn = document.getElementById('minimize-btn');
 const closeBtn = document.getElementById('close-btn');
 const alwaysOnTopBtn = document.getElementById('always-on-top-btn');
+const previewToggleBtn = document.getElementById('preview-toggle-btn');
 const formatBtns = document.querySelectorAll('.format-btn');
 
 // State
@@ -21,7 +22,6 @@ let currentWindow = null;
 let isUpdating = false;
 let scrollTimeout = null;
 let statusTimeout = null;
-let isPreviewVisible = true;
 let isSourceMode = false;
 
 // Configure marked for GitHub-flavored markdown
@@ -31,13 +31,13 @@ function configureMarked() {
     console.error('Marked library not loaded');
     return false;
   }
-  
+
   // Use marked.parse with options (v5+ compatible)
   marked.use({
     gfm: true,
     breaks: true
   });
-  
+
   return true;
 }
 
@@ -63,20 +63,20 @@ function waitForMarked(maxAttempts = 50) {
 async function init() {
   try {
     currentWindow = getCurrentWindow();
-    
+
     // Wait for marked to be available (handles CDN loading delay)
     const markedLoaded = await waitForMarked();
     if (!markedLoaded) {
       setStatus('Error: Markdown library failed to load', 'error');
       return;
     }
-    
+
     // Configure marked
     if (!configureMarked()) {
       setStatus('Error: Failed to configure markdown', 'error');
       return;
     }
-    
+
     // Load saved content if any
     const savedContent = sessionStorage.getItem('currentNote');
     if (savedContent) {
@@ -84,26 +84,30 @@ async function init() {
       await updatePreview();
       updateWordCount();
     }
-    
+
     // Setup event listeners
     setupEventListeners();
-    
+
     // Listen for new-note event from global hotkey
     listen('new-note', () => {
       newNote();
     }).catch(err => {
       console.error('Failed to listen for new-note event:', err);
     });
-    
+
     // Initial render
     await updatePreview();
-    
+
+    // Set initial state to preview mode (transparent text, visible preview)
+    editorInput.style.color = 'transparent';
+    editorInput.style.caretColor = 'var(--accent-blue)';
+
     // Focus editor
     editorInput.focus();
-    
+
     // Check initial always-on-top state
     updateAlwaysOnTopButton();
-    
+
     setStatus('Ready');
   } catch (error) {
     console.error('Initialization error:', error);
@@ -114,13 +118,13 @@ async function init() {
 function setupEventListeners() {
   // Editor input - live preview update
   editorInput.addEventListener('input', handleInput);
-  
+
   // Sync scroll positions with throttling
   editorInput.addEventListener('scroll', handleScroll);
-  
+
   // Keyboard shortcuts
   editorInput.addEventListener('keydown', handleKeyDown);
-  
+
   // Format toolbar buttons
   formatBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -130,14 +134,15 @@ function setupEventListeners() {
       }
     });
   });
-  
+
   // Action buttons
   saveBtn?.addEventListener('click', saveNote);
   newNoteBtn?.addEventListener('click', newNote);
   minimizeBtn?.addEventListener('click', () => currentWindow?.minimize());
   closeBtn?.addEventListener('click', () => currentWindow?.hide());
   alwaysOnTopBtn?.addEventListener('click', toggleAlwaysOnTop);
-  
+  previewToggleBtn?.addEventListener('click', togglePreview);
+
   // Handle window events
   window.addEventListener('beforeunload', cleanup);
 }
@@ -160,25 +165,25 @@ function cleanup() {
 
 async function handleInput() {
   if (isUpdating) return;
-  
+
   isUpdating = true;
-  
+
   try {
     await updatePreview();
     updateWordCount();
-    
+
     // Auto-save to session storage
     sessionStorage.setItem('currentNote', editorInput.value);
-    
+
     // Schedule file auto-save
     if (autoSaveTimeout) {
       clearTimeout(autoSaveTimeout);
     }
-    
+
     autoSaveTimeout = setTimeout(() => {
       autoSave();
     }, 5000);
-    
+
     setStatus('Unsaved changes', 'saving');
   } finally {
     isUpdating = false;
@@ -195,70 +200,70 @@ function handleKeyDown(e) {
   const ctrl = isMac ? e.metaKey : e.ctrlKey;
   const shift = e.shiftKey;
   const alt = e.altKey;
-  
+
   // Ctrl+B: Bold
   if (ctrl && e.key === 'b' && !shift && !alt) {
     e.preventDefault();
     applyFormat('bold');
     return;
   }
-  
+
   // Ctrl+I: Italic
   if (ctrl && e.key === 'i' && !shift && !alt) {
     e.preventDefault();
     applyFormat('italic');
     return;
   }
-  
+
   // Ctrl+K: Link
   if (ctrl && e.key === 'k' && !shift && !alt) {
     e.preventDefault();
     applyFormat('link');
     return;
   }
-  
+
   // Ctrl+Shift+C: Code block (check for uppercase 'C' since Shift is held)
   if (ctrl && shift && e.key === 'C') {
     e.preventDefault();
     applyFormat('codeblock');
     return;
   }
-  
+
   // Ctrl+S: Save
   if (ctrl && e.key === 's' && !shift && !alt) {
     e.preventDefault();
     saveNote();
     return;
   }
-  
+
   // Ctrl+N: New note
   if (ctrl && e.key === 'n' && !shift && !alt) {
     e.preventDefault();
     newNote();
     return;
   }
-  
+
   // Ctrl+H: Heading
   if (ctrl && e.key === 'h' && !shift && !alt) {
     e.preventDefault();
     applyFormat('heading');
     return;
   }
-  
+
   // Ctrl+L: List
   if (ctrl && e.key === 'l' && !shift && !alt) {
     e.preventDefault();
     applyFormat('list');
     return;
   }
-  
+
   // Ctrl+Shift+Q: Quote (check for uppercase 'Q' since Shift is held)
   if (ctrl && shift && e.key === 'Q') {
     e.preventDefault();
     applyFormat('quote');
     return;
   }
-  
+
   // Ctrl+P or Ctrl+Shift+P: Toggle always on top / Toggle preview
   if (ctrl && (e.key === 'p' || e.key === 'P') && !alt) {
     e.preventDefault();
@@ -271,21 +276,21 @@ function handleKeyDown(e) {
     }
     return;
   }
-  
+
   // Escape: Hide to tray
   if (e.key === 'Escape' && !ctrl && !shift && !alt) {
     e.preventDefault();
     currentWindow?.hide();
     return;
   }
-  
+
   // Tab key handling for lists/code
   if (e.key === 'Tab' && !ctrl && !alt) {
     e.preventDefault();
     handleTab(e.shiftKey);
     return;
   }
-  
+
   // Enter key handling for auto-continuation
   if (e.key === 'Enter' && !ctrl && !alt) {
     handleEnter(e);
@@ -297,13 +302,13 @@ function handleTab(shift) {
   const end = editorInput.selectionEnd;
   const value = editorInput.value;
   const selectedText = value.substring(start, end);
-  
+
   if (start !== end) {
     // Multi-line selection
     const lines = selectedText.split('\n');
     if (shift) {
       // Outdent
-      const modifiedLines = lines.map(line => 
+      const modifiedLines = lines.map(line =>
         line.startsWith('  ') ? line.substring(2) : line.replace(/^\t/, '')
       );
       const newText = modifiedLines.join('\n');
@@ -329,7 +334,7 @@ function handleTab(shift) {
       editorInput.setRangeText('  ', start, end, 'end');
     }
   }
-  
+
   updatePreview();
   updateWordCount();
 }
@@ -339,13 +344,13 @@ function handleEnter(e) {
   const value = editorInput.value;
   const lineStart = value.lastIndexOf('\n', start - 1) + 1;
   const currentLine = value.substring(lineStart, start);
-  
+
   // Check for list items
   const listMatch = currentLine.match(/^(\s*)([-*]|\d+\.)\s+/);
   if (listMatch) {
     e.preventDefault();
     const [, indent, marker] = listMatch;
-    
+
     // If line is empty after marker, remove the marker
     if (currentLine.trim() === marker) {
       editorInput.setRangeText('\n', lineStart, start, 'end');
@@ -362,7 +367,7 @@ function handleEnter(e) {
     updateWordCount();
     return;
   }
-  
+
   // Check for blockquotes
   const quoteMatch = currentLine.match(/^(\s*\>\s*)/);
   if (quoteMatch) {
@@ -382,11 +387,11 @@ function applyFormat(format) {
   const end = editorInput.selectionEnd;
   const value = editorInput.value;
   const selectedText = value.substring(start, end);
-  
+
   let newText = '';
   let cursorOffset = 0;
   let newCursorPos = null;
-  
+
   switch (format) {
     case 'bold':
       if (selectedText.startsWith('**') && selectedText.endsWith('**')) {
@@ -397,9 +402,9 @@ function applyFormat(format) {
         cursorOffset = selectedText ? 0 : -2;
       }
       break;
-      
+
     case 'italic':
-      if (selectedText.startsWith('*') && selectedText.endsWith('*') && 
+      if (selectedText.startsWith('*') && selectedText.endsWith('*') &&
           !(selectedText.startsWith('**') && selectedText.endsWith('**'))) {
         newText = selectedText.slice(1, -1);
         cursorOffset = -1;
@@ -408,7 +413,7 @@ function applyFormat(format) {
         cursorOffset = selectedText ? 0 : -1;
       }
       break;
-      
+
     case 'code':
       if (selectedText.startsWith('`') && selectedText.endsWith('`')) {
         newText = selectedText.slice(1, -1);
@@ -418,7 +423,7 @@ function applyFormat(format) {
         cursorOffset = selectedText ? 0 : -1;
       }
       break;
-      
+
     case 'link':
       if (selectedText) {
         newText = `[${selectedText}](url)`;
@@ -428,7 +433,7 @@ function applyFormat(format) {
         cursorOffset = -5;
       }
       break;
-      
+
     case 'codeblock':
       if (selectedText.includes('\n')) {
         newText = `\`\`\`\n${selectedText}\n\`\`\``;
@@ -438,13 +443,13 @@ function applyFormat(format) {
         cursorOffset = -14;
       }
       break;
-      
+
     case 'heading': {
       // Check if current line is already a heading
       const lineStart = value.lastIndexOf('\n', start - 1) + 1;
       const currentLine = value.substring(lineStart, start);
       const headingMatch = currentLine.match(/^#{1,6}\s*/);
-      
+
       if (headingMatch) {
         // Remove heading or increase level
         const currentLevel = headingMatch[0].trim().length;
@@ -465,39 +470,39 @@ function applyFormat(format) {
       }
       break;
     }
-      
+
     case 'quote':
       newText = selectedText.split('\n').map(line => '> ' + line).join('\n');
       cursorOffset = 0;
       break;
-      
+
     case 'list':
       newText = selectedText.split('\n').map(line => '- ' + line).join('\n');
       cursorOffset = 0;
       break;
-      
+
     default:
       return;
   }
-  
+
   editorInput.setRangeText(newText, start, end, 'end');
-  
+
   // Adjust cursor position
   if (!selectedText && cursorOffset !== 0) {
     const newPos = editorInput.selectionStart + cursorOffset;
     editorInput.setSelectionRange(newPos, newPos);
   }
-  
+
   updatePreview();
   updateWordCount();
   editorInput.focus();
 }
 
 async function updatePreview() {
-  if (!isPreviewVisible) return;
-  
+  if (isSourceMode) return;  // Don't update preview in source mode
+
   const content = editorInput.value;
-  
+
   try {
     // marked.parse returns a Promise in v5+, await it
     const html = await marked.parse(content || '');
@@ -520,23 +525,23 @@ function setStatus(message, type = 'normal') {
     clearTimeout(statusTimeout);
     statusTimeout = null;
   }
-  
+
   statusMessage.textContent = message;
   statusDot.className = 'status-indicator' + (type === 'saving' ? ' saving' : '');
-  
+
   const colors = {
     saved: 'var(--status-success)',
     error: 'var(--accent-red)',
     saving: 'var(--accent-yellow)',
     normal: 'var(--accent-blue)'
   };
-  
+
   statusDot.style.background = colors[type] || colors.normal;
 }
 
 function setTemporaryStatus(message, type, duration = 2000) {
   setStatus(message, type);
-  
+
   statusTimeout = setTimeout(() => {
     setStatus('Ready');
   }, duration);
@@ -544,7 +549,7 @@ function setTemporaryStatus(message, type, duration = 2000) {
 
 async function updateAlwaysOnTopButton() {
   if (!currentWindow) return;
-  
+
   try {
     const isAlwaysOnTop = await currentWindow.isAlwaysOnTop();
     alwaysOnTopBtn?.classList.toggle('active', isAlwaysOnTop);
@@ -555,16 +560,38 @@ async function updateAlwaysOnTopButton() {
 
 function togglePreview() {
   isSourceMode = !isSourceMode;
-  
+
   if (isSourceMode) {
     // Source mode: hide preview, show raw markdown in editor
+    editorInput.style.color = 'var(--text-primary)';
     editorPreview.style.visibility = 'hidden';
     editorPreview.style.opacity = '0';
+    previewToggleBtn?.classList.add('active');
+    previewToggleBtn && (previewToggleBtn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+        <line x1="10" y1="9" x2="8" y2="9"></line>
+      </svg>
+      Source
+    `);
     setTemporaryStatus('Source mode', 'normal', 1500);
   } else {
-    // Preview mode: show rendered markdown
+    // Preview mode: show rendered markdown, make text transparent
+    editorInput.style.color = 'transparent';
+    editorInput.style.caretColor = 'var(--accent-blue)';
     editorPreview.style.visibility = 'visible';
     editorPreview.style.opacity = '1';
+    previewToggleBtn?.classList.remove('active');
+    previewToggleBtn && (previewToggleBtn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+      Preview
+    `);
     updatePreview();
     setTemporaryStatus('Preview mode', 'normal', 1500);
   }
@@ -575,7 +602,7 @@ async function toggleAlwaysOnTop() {
     setTemporaryStatus('Window not ready', 'error');
     return;
   }
-  
+
   try {
     const isAlwaysOnTop = await currentWindow.isAlwaysOnTop();
     await currentWindow.setAlwaysOnTop(!isAlwaysOnTop);
@@ -590,13 +617,13 @@ async function toggleAlwaysOnTop() {
 async function autoSave() {
   const content = editorInput.value.trim();
   if (!content) return;
-  
+
   try {
     setStatus('Auto-saving...', 'saving');
     await invoke('save_note', { content });
     setStatus('Auto-saved', 'saved');
     sessionStorage.removeItem('currentNote');
-    
+
     statusTimeout = setTimeout(() => {
       setStatus('Ready');
     }, 2000);
@@ -612,19 +639,19 @@ async function saveNote() {
     setTemporaryStatus('Nothing to save', 'error');
     return;
   }
-  
+
   // Clear auto-save timeout since we're manually saving
   if (autoSaveTimeout) {
     clearTimeout(autoSaveTimeout);
     autoSaveTimeout = null;
   }
-  
+
   try {
     setStatus('Saving...', 'saving');
     const filepath = await invoke('save_note', { content });
     setStatus(`Saved: ${filepath.split('/').pop()}`, 'saved');
     sessionStorage.removeItem('currentNote');
-    
+
     statusTimeout = setTimeout(() => {
       setStatus('Ready');
     }, 3000);
@@ -640,7 +667,7 @@ function newNote() {
     clearTimeout(autoSaveTimeout);
     autoSaveTimeout = null;
   }
-  
+
   editorInput.value = '';
   sessionStorage.removeItem('currentNote');
   updatePreview();
