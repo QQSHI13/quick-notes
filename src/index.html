@@ -99,11 +99,41 @@
             </svg>
             Pin
           </button>
+          <button id="notes-list-btn" class="btn" title="Notes List" aria-label="Toggle notes list">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            Notes
+          </button>
+          <button id="settings-btn" class="btn" title="Settings" aria-label="Open settings">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
         </div>
       </div>
       
-      <!-- Main content area - MarkText style WYSIWYG editor -->
+      <!-- Main content area -->
       <div class="content">
+        <!-- Notes list sidebar -->
+        <div id="notes-sidebar" class="notes-sidebar">
+          <div class="notes-sidebar-header">
+            <span class="notes-sidebar-title">Recent Notes</span>
+            <button id="refresh-notes-btn" class="btn btn-icon" title="Refresh list">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6M1 20v-6h6"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+            </button>
+          </div>
+          <div id="notes-list" class="notes-list"></div>
+        </div>
+
         <div class="editor-container">
           <textarea 
             id="editor-input" 
@@ -112,6 +142,98 @@
             aria-label="Note editor"
           ></textarea>
           <div id="editor-preview" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <!-- Settings Modal -->
+      <div id="settings-modal" class="modal-overlay">
+        <div class="modal">
+          <div class="modal-header">
+            <h2 class="modal-title">Settings</h2>
+            <button id="close-settings-btn" class="modal-close" aria-label="Close settings">&times;</button>
+          </div>
+          <div class="modal-content">
+            <div class="settings-section">
+              <h3 class="settings-section-title">Theme</h3>
+              <div class="settings-option">
+                <label class="settings-label">
+                  <input type="radio" name="theme" value="dark" checked>
+                  <span>Dark (GitHub)</span>
+                </label>
+                <label class="settings-label">
+                  <input type="radio" name="theme" value="light">
+                  <span>Light</span>
+                </label>
+                <label class="settings-label">
+                  <input type="radio" name="theme" value="high-contrast">
+                  <span>High Contrast</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <h3 class="settings-section-title">Auto-save</h3>
+              <div class="settings-option">
+                <label class="settings-label">
+                  <input type="checkbox" id="auto-save-enabled" checked>
+                  <span>Enable auto-save</span>
+                </label>
+              </div>
+              <div class="settings-option">
+                <label class="settings-label-inline">
+                  <span>Interval (seconds):</span>
+                  <input type="number" id="auto-save-interval" min="5" max="300" value="30" class="settings-input-number">
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <h3 class="settings-section-title">Editor</h3>
+              <div class="settings-option">
+                <label class="settings-label">
+                  <input type="checkbox" id="spell-check-enabled">
+                  <span>Enable spell check</span>
+                </label>
+              </div>
+              <div class="settings-option">
+                <label class="settings-label-inline">
+                  <span>Font size:</span>
+                  <input type="range" id="font-size-slider" min="12" max="24" value="14" class="settings-slider">
+                  <span id="font-size-value">14px</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <h3 class="settings-section-title">Keyboard Shortcuts</h3>
+              <div class="shortcuts-list">
+                <div class="shortcut-item">
+                  <kbd>Ctrl+Shift+N</kbd> <span>Open Quick Notes</span>
+                </div>
+                <div class="shortcut-item">
+                  <kbd>Ctrl+S</kbd> <span>Save note</span>
+                </div>
+                <div class="shortcut-item">
+                  <kbd>Ctrl+N</kbd> <span>New note</span>
+                </div>
+                <div class="shortcut-item">
+                  <kbd>Ctrl+P</kbd> <span>Toggle always on top</span>
+                </div>
+                <div class="shortcut-item">
+                  <kbd>Ctrl+Shift+P</kbd> <span>Toggle preview</span>
+                </div>
+                <div class="shortcut-item">
+                  <kbd>Esc</kbd> <span>Hide window</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <h3 class="settings-section-title">Storage</h3>
+              <p class="settings-info">Notes are saved to: <code id="notes-path">~/notes/</code></p>
+              <button id="open-notes-dir-btn" class="btn">Open Notes Directory</button>
+            </div>
+          </div>
         </div>
       </div>
       

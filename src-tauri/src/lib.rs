@@ -54,6 +54,100 @@ fn get_notes_dir() -> Result<String, String> {
     Ok(notes_dir.to_string_lossy().to_string())
 }
 
+// List all notes in the notes directory
+#[tauri::command]
+fn list_notes() -> Result<Vec<(String, String, u64)>, String> {
+    let home_dir = dirs::home_dir().ok_or("Could not get home directory")?;
+    let notes_dir = home_dir.join("notes");
+    
+    if !notes_dir.exists() {
+        return Ok(vec![]);
+    }
+    
+    let mut notes = vec![];
+    let entries = std::fs::read_dir(&notes_dir)
+        .map_err(|e| format!("Failed to read notes directory: {}", e))?;
+    
+    for entry in entries {
+        if let Ok(entry) = entry {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("md") {
+                if let Ok(metadata) = entry.metadata() {
+                    if let Ok(modified) = metadata.modified() {
+                        if let Ok(content) = std::fs::read_to_string(&path) {
+                            let filename = path.file_stem()
+                                .and_then(|s| s.to_str())
+                                .unwrap_or("unknown")
+                                .to_string();
+                            let preview = content.lines().next()
+                                .unwrap_or("")
+                                .chars()
+                                .take(50)
+                                .collect::<String>();
+                            let timestamp = modified
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .unwrap_or_default()
+                                .as_secs();
+                            notes.push((filename, preview, timestamp));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Sort by timestamp descending (newest first)
+    notes.sort_by(|a, b| b.2.cmp(&a.2));
+    Ok(notes)
+}
+
+// Load a specific note by filename
+#[tauri::command]
+fn load_note(filename: String) -> Result<String, String> {
+    let home_dir = dirs::home_dir().ok_or("Could not get home directory")?;
+    let notes_dir = home_dir.join("notes");
+    let filepath = notes_dir.join(format!("{}.md", filename));
+    
+    // Security check: ensure the file is within notes directory
+    let canonical_path = filepath.canonicalize()
+        .map_err(|e| format!("Invalid file path: {}", e))?;
+    let canonical_notes_dir = notes_dir.canonicalize()
+        .map_err(|e| format!("Invalid notes directory: {}", e))?;
+    
+    if !canonical_path.starts_with(&canonical_notes_dir) {
+        return Err("Access denied: file outside notes directory".to_string());
+    }
+    
+    std::fs::read_to_string(&canonical_path)
+        .map_err(|e| format!("Failed to read note: {}", e))
+}
+
+// Delete a note by filename
+#[tauri::command]
+fn delete_note(filename: String) -> Result<(), String> {
+    let home_dir = dirs::home_dir().ok_or("Could not get home directory")?;
+    let notes_dir = home_dir.join("notes");
+    let filepath = notes_dir.join(format!("{}.md", filename));
+    
+    // Security check
+    let canonical_path = filepath.canonicalize()
+        .map_err(|e| format!("Invalid file path: {}", e))?;
+    let canonical_notes_dir = notes_dir.canonicalize()
+        .map_err(|e| format!("Invalid notes directory: {}", e))?;
+    
+    if !canonical_path.starts_with(&canonical_notes_dir) {
+        return Err("Access denied: file outside notes directory".to_string());
+    }
+    
+    std::fs::remove_file(&canonical_path)
+        .map_err(|e| format!("Failed to delete note: {}", e))
+}
+    std::fs::create_dir_all(&notes_dir)
+        .map_err(|e| format!("Failed to create notes directory: {}", e))?;
+    
+    Ok(notes_dir.to_string_lossy().to_string())
+}
+
 // Show the main window
 fn show_window(app: &tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
@@ -82,7 +176,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![save_note, get_notes_dir])
+        .invoke_handler(tauri::generate_handler![save_note, get_notes_dir, list_notes, load_note, delete_note])
         .setup(|app| {
             // Create menu items for the tray
             let open_item = MenuItem::with_id(app, "open", "Open", true, None::<&str>)

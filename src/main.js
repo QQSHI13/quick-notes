@@ -676,8 +676,208 @@ function newNote() {
   editorInput.focus();
 }
 
+// ========== NOTES LIST ==========
+let notesSidebarVisible = false;
+
+async function toggleNotesSidebar() {
+  const sidebar = document.getElementById('notes-sidebar');
+  notesSidebarVisible = !notesSidebarVisible;
+  sidebar.classList.toggle('hidden', !notesSidebarVisible);
+  
+  if (notesSidebarVisible) {
+    await loadNotesList();
+  }
+}
+
+async function loadNotesList() {
+  const listContainer = document.getElementById('notes-list');
+  listContainer.innerHTML = '<div class="note-item"><span class="note-item-preview">Loading...</span></div>';
+  
+  try {
+    const notes = await invoke('list_notes');
+    listContainer.innerHTML = '';
+    
+    if (notes.length === 0) {
+      listContainer.innerHTML = '<div class="note-item"><span class="note-item-preview">No notes yet</span></div>';
+      return;
+    }
+    
+    notes.forEach(([filename, preview, timestamp]) => {
+      const date = new Date(timestamp * 1000).toLocaleDateString();
+      const item = document.createElement('div');
+      item.className = 'note-item';
+      item.innerHTML = `
+        <span class="note-item-title">${filename}</span>
+        <span class="note-item-preview">${preview || 'No content'}</span>
+        <span class="note-item-date">${date}</span>
+      `;
+      item.onclick = () => openNote(filename);
+      listContainer.appendChild(item);
+    });
+  } catch (error) {
+    console.error('Failed to load notes:', error);
+    listContainer.innerHTML = '<div class="note-item"><span class="note-item-preview">Error loading notes</span></div>';
+  }
+}
+
+async function openNote(filename) {
+  try {
+    const content = await invoke('load_note', { filename });
+    editorInput.value = content;
+    updatePreview();
+    updateWordCount();
+    setTemporaryStatus(`Opened: ${filename}`, 'normal');
+  } catch (error) {
+    console.error('Failed to open note:', error);
+    setTemporaryStatus('Failed to open note', 'error');
+  }
+}
+
+// ========== SETTINGS ==========
+let settingsModal = null;
+let autoSaveEnabled = true;
+let autoSaveInterval = 30;
+
+function initSettings() {
+  settingsModal = document.getElementById('settings-modal');
+  
+  // Load saved settings
+  const savedSettings = localStorage.getItem('quickNotesSettings');
+  if (savedSettings) {
+    const settings = JSON.parse(savedSettings);
+    autoSaveEnabled = settings.autoSaveEnabled ?? true;
+    autoSaveInterval = settings.autoSaveInterval ?? 30;
+    
+    // Apply settings
+    document.getElementById('auto-save-enabled').checked = autoSaveEnabled;
+    document.getElementById('auto-save-interval').value = autoSaveInterval;
+    document.getElementById('font-size-slider').value = settings.fontSize ?? 14;
+    document.getElementById('font-size-value').textContent = (settings.fontSize ?? 14) + 'px';
+    document.getElementById('spell-check-enabled').checked = settings.spellCheck ?? false;
+    
+    // Apply font size
+    editorInput.style.fontSize = (settings.fontSize ?? 14) + 'px';
+    
+    // Apply theme
+    if (settings.theme) {
+      document.querySelector(`input[name="theme"][value="${settings.theme}"]`).checked = true;
+      applyTheme(settings.theme);
+    }
+  }
+  
+  // Settings button
+  document.getElementById('settings-btn')?.addEventListener('click', openSettings);
+  document.getElementById('close-settings-btn')?.addEventListener('click', closeSettings);
+  document.getElementById('open-notes-dir-btn')?.addEventListener('click', openNotesDir);
+  
+  // Settings change handlers
+  document.getElementById('auto-save-enabled')?.addEventListener('change', (e) => {
+    autoSaveEnabled = e.target.checked;
+    saveSettings();
+  });
+  
+  document.getElementById('auto-save-interval')?.addEventListener('change', (e) => {
+    autoSaveInterval = parseInt(e.target.value) || 30;
+    saveSettings();
+  });
+  
+  document.getElementById('font-size-slider')?.addEventListener('input', (e) => {
+    const size = e.target.value;
+    document.getElementById('font-size-value').textContent = size + 'px';
+    editorInput.style.fontSize = size + 'px';
+    saveSettings();
+  });
+  
+  document.getElementById('spell-check-enabled')?.addEventListener('change', (e) => {
+    editorInput.spellcheck = e.target.checked;
+    saveSettings();
+  });
+  
+  document.querySelectorAll('input[name="theme"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      applyTheme(e.target.value);
+      saveSettings();
+    });
+  });
+  
+  // Get notes path
+  invoke('get_notes_dir').then(path => {
+    document.getElementById('notes-path').textContent = path;
+  }).catch(console.error);
+}
+
+function openSettings() {
+  settingsModal?.classList.add('active');
+}
+
+function closeSettings() {
+  settingsModal?.classList.remove('active');
+}
+
+async function openNotesDir() {
+  try {
+    const path = await invoke('get_notes_dir');
+    // Use shell open command through Tauri
+    const { open } = window.__TAURI__.shell;
+    await open(path);
+  } catch (error) {
+    console.error('Failed to open notes directory:', error);
+    setTemporaryStatus('Failed to open directory', 'error');
+  }
+}
+
+function applyTheme(theme) {
+  document.body.classList.remove('theme-light', 'theme-high-contrast');
+  if (theme === 'light') {
+    document.body.classList.add('theme-light');
+  } else if (theme === 'high-contrast') {
+    document.body.classList.add('theme-high-contrast');
+  }
+}
+
+function saveSettings() {
+  const settings = {
+    autoSaveEnabled,
+    autoSaveInterval,
+    fontSize: parseInt(document.getElementById('font-size-slider')?.value || 14),
+    spellCheck: document.getElementById('spell-check-enabled')?.checked ?? false,
+    theme: document.querySelector('input[name="theme"]:checked')?.value || 'dark'
+  };
+  localStorage.setItem('quickNotesSettings', JSON.stringify(settings));
+}
+
+// Override autoSave to respect settings
+const originalAutoSave = autoSave;
+autoSave = async function() {
+  if (!autoSaveEnabled) return;
+  
+  const content = editorInput.value.trim();
+  if (!content) return;
+  
+  try {
+    setStatus('Auto-saving...', 'saving');
+    await invoke('save_note', { content });
+    setStatus('Auto-saved', 'saved');
+    sessionStorage.removeItem('currentNote');
+    
+    statusTimeout = setTimeout(() => {
+      setStatus('Ready');
+    }, 2000);
+  } catch (error) {
+    console.error('Auto-save failed:', error);
+    setStatus('Auto-save failed', 'error');
+  }
+};
+
 // Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+  initSettings();
+  
+  // Setup notes sidebar button
+  document.getElementById('notes-list-btn')?.addEventListener('click', toggleNotesSidebar);
+  document.getElementById('refresh-notes-btn')?.addEventListener('click', loadNotesList);
+});
 
 // Handle errors gracefully
 window.addEventListener('error', (e) => {
