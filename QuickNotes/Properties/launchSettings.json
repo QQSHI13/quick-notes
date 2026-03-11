@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "QuickNotes (Package)": {
+      "commandName": "MsixPackage",
+      "doNotLaunchApp": true
+    },
+    "QuickNotes (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
