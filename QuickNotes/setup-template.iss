@@ -5,7 +5,7 @@
 
 [Setup]
 AppId={{AB9CB241-4C93-413F-96AF-43B7F5EF8E47}}
-AppName=Quick Notes
+AppName=Quick Notes Extension
 AppVersion={#AppVersion}
 AppPublisher=QQ
 DefaultDirName={autopf}\QuickNotes
@@ -14,8 +14,7 @@ OutputBaseFilename=QuickNotes-Setup-{#AppVersion}
 Compression=lzma
 SolidCompression=yes
 MinVersion=10.0.19041
-ArchitecturesAllowed=x64compatible
-ArchitecturesInstallIn64BitMode=x64compatible
+; Architectures will be set by build script for x64/arm64
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
