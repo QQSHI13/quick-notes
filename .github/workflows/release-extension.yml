@@ -18,7 +18,7 @@ on:
 
 # Global constants
 env:
-  DISPLAY_NAME: ${{ vars.DISPLAY_NAME || 'Quick Notes' }}
+  DISPLAY_NAME: ${{ vars.DISPLAY_NAME || 'Quick Notes Extension' }}
   EXTENSION_NAME: ${{ vars.EXTENSION_NAME || 'QuickNotes' }}
   FOLDER_NAME: ${{ vars.FOLDER_NAME || 'QuickNotes' }}
   GITHUB_REPO_URL: ${{ vars.GITHUB_REPO_URL || 'https://github.com/QQSHI13/quick-notes' }}
