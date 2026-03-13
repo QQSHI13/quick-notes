@@ -2,6 +2,8 @@
 // The Microsoft Corporation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -9,7 +11,7 @@ using Microsoft.CommandPalette.Extensions;
 
 namespace QuickNotes;
 
-[Guid("ab9cb241-4c93-413f-96af-43b7f5ef8e47")]
+[Guid("3c7f3c8e-2b4a-4c8d-9e1f-5a6b7c8d9e0f")]
 public sealed partial class QuickNotes : IExtension, IDisposable
 {
     private readonly ManualResetEvent _extensionDisposedEvent;

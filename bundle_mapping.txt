@@ -1,0 +1,3 @@
+[Files]
+"QuickNotes\bin\x64\Release\net9.0-windows10.0.26100.0\win-x64\QuickNotes_0.2.1.0_x64.msix" "QuickNotes_0.2.1.0_x64.msix"
+"QuickNotes\bin\ARM64\Release\net9.0-windows10.0.26100.0\win-arm64\QuickNotes_0.2.1.0_arm64.msix" "QuickNotes_0.2.1.0_arm64.msix"

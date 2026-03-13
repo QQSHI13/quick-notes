@@ -2,6 +2,8 @@
 // The Microsoft Corporation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,17 +15,76 @@ namespace QuickNotes;
 
 internal sealed partial class OpenExistingNotesPage : ListPage
 {
+    private static FileSystemWatcher? _watcher;
+    private static DateTime _lastRefresh = DateTime.MinValue;
+    private static readonly TimeSpan _refreshCooldown = TimeSpan.FromSeconds(1);
+
     public OpenExistingNotesPage()
     {
         Icon = new IconInfo(new IconData("\uE8E5")); // Open folder icon
         Title = "Open Existing Notes";
         Name = "Open Existing";
+        
+        SetupFileSystemWatcher();
+    }
+
+    private static void SetupFileSystemWatcher()
+    {
+        try
+        {
+            var settings = SettingsService.GetSettings();
+            var notesDir = settings.NotesDirectory ?? PathHelper.GetDefaultNotesDirectory();
+
+            if (!Directory.Exists(notesDir))
+            {
+                return;
+            }
+
+            // Clean up old watcher if directory changed
+            _watcher?.Dispose();
+
+            _watcher = new FileSystemWatcher(notesDir, "*.md")
+            {
+                NotifyFilter = NotifyFilters.FileName | 
+                               NotifyFilters.LastWrite | 
+                               NotifyFilters.CreationTime,
+                EnableRaisingEvents = true,
+                IncludeSubdirectories = false
+            };
+
+            // Throttle refreshes to avoid excessive updates
+            _watcher.Created += (s, e) => RequestRefresh();
+            _watcher.Deleted += (s, e) => RequestRefresh();
+            _watcher.Renamed += (s, e) => RequestRefresh();
+            _watcher.Changed += (s, e) => RequestRefresh();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[FILE WATCHER] Error setting up watcher: {ex.Message}");
+        }
+    }
+
+    private static void RequestRefresh()
+    {
+        var now = DateTime.Now;
+        if (now - _lastRefresh < _refreshCooldown)
+        {
+            return;
+        }
+        _lastRefresh = now;
+
+        // The Command Palette will refresh when the user navigates
+        // We can't force a refresh programmatically, but the next GetItems() call
+        // will return updated data
     }
 
     public override IListItem[] GetItems()
     {
+        // Ensure watcher is set up (in case directory changed)
+        SetupFileSystemWatcher();
+
         var settings = SettingsService.GetSettings();
-        var notesDir = settings.NotesDirectory ?? GetDefaultNotesDirectory();
+        var notesDir = settings.NotesDirectory ?? PathHelper.GetDefaultNotesDirectory();
 
         if (!Directory.Exists(notesDir))
         {
@@ -66,15 +127,37 @@ internal sealed partial class OpenExistingNotesPage : ListPage
         }
 
         // Sort by last modified (newest first) and create list items
-        return noteFiles
+        var items = noteFiles
             .OrderByDescending(f => f.LastModified)
-            .Select(f => new ListItem(new OpenNoteCommand(f.FullPath))
+            .Select(f =>
             {
-                Title = string.IsNullOrEmpty(f.Title) ? f.Name : f.Title,
-                Subtitle = $"{f.Name} • Modified: {f.LastModified:yyyy-MM-dd HH:mm}",
-                Icon = new IconInfo(new IconData("\uE8A5")), // Document icon
+                var command = new OpenNoteCommand(f.FullPath);
+                var syncCommand = new SyncNoteTitleCommand(f.FullPath);
+                var deleteCommand = new ConfirmDeleteNoteCommand(f.FullPath);
+
+                return new ListItem(command)
+                {
+                    Title = string.IsNullOrEmpty(f.Title) ? f.Name : f.Title,
+                    Subtitle = $"{f.Name} • Modified: {f.LastModified:yyyy-MM-dd HH:mm}",
+                    Icon = new IconInfo(new IconData("\uE8A5")), // Document icon
+                    MoreCommands = new[]
+                    {
+                        new CommandContextItem(syncCommand)
+                        {
+                            Title = "Sync Title",
+                            Icon = new IconInfo(new IconData("\uE8AC")),
+                        },
+                        new CommandContextItem(deleteCommand)
+                        {
+                            Title = "Delete",
+                            Icon = new IconInfo(new IconData("\uE74D")),
+                        },
+                    }
+                };
             })
-            .ToArray<IListItem>();
+            .ToList<IListItem>();
+
+        return items.ToArray();
     }
 
     private static List<NoteFile> GetNoteFiles(string directory)
@@ -90,6 +173,11 @@ internal sealed partial class OpenExistingNotesPage : ListPage
                 try
                 {
                     var fileInfo = new FileInfo(file);
+                    
+                    // Skip files that can't be read
+                    if (!fileInfo.Exists)
+                        continue;
+
                     var title = ExtractTitleFromFile(file);
                     
                     notes.Add(new NoteFile
@@ -100,15 +188,15 @@ internal sealed partial class OpenExistingNotesPage : ListPage
                         Title = title,
                     });
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Skip files we can't access
+                    System.Diagnostics.Debug.WriteLine($"[GET NOTES] Error reading file {file}: {ex.Message}");
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Return empty list if we can't access directory
+            System.Diagnostics.Debug.WriteLine($"[GET NOTES] Error accessing directory {directory}: {ex.Message}");
         }
 
         return notes;
@@ -140,19 +228,12 @@ internal sealed partial class OpenExistingNotesPage : ListPage
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore errors reading file
+            System.Diagnostics.Debug.WriteLine($"[EXTRACT TITLE] Error reading file {filePath}: {ex.Message}");
         }
         
         return null;
-    }
-
-    private static string GetDefaultNotesDirectory()
-    {
-        return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-            "QuickNotes");
     }
 
     private sealed class NoteFile
@@ -161,5 +242,52 @@ internal sealed partial class OpenExistingNotesPage : ListPage
         public string FullPath { get; set; } = string.Empty;
         public DateTime LastModified { get; set; }
         public string? Title { get; set; }
+    }
+}
+
+internal sealed partial class DeleteConfirmationPage : ListPage
+{
+    private readonly string _filePath;
+    private readonly string _fileName;
+
+    public DeleteConfirmationPage(string filePath, string fileName)
+    {
+        _filePath = filePath;
+        _fileName = fileName;
+        Icon = new IconInfo(new IconData("\uE74D")); // Delete icon
+        Title = "Confirm Delete";
+        Name = "Confirm Delete";
+    }
+
+    public override IListItem[] GetItems()
+    {
+        return new[]
+        {
+            new ListItem(new DeleteNoteCommand(_filePath))
+            {
+                Title = $"Delete '{_fileName}'",
+                Subtitle = "This action cannot be undone",
+                Icon = new IconInfo(new IconData("\uE74D")), // Delete icon
+            },
+            new ListItem(new GoBackCommand())
+            {
+                Title = "Cancel",
+                Subtitle = "Keep the note",
+                Icon = new IconInfo(new IconData("\uE711")), // Cancel icon
+            },
+        };
+    }
+}
+
+public sealed partial class GoBackCommand : InvokableCommand
+{
+    public GoBackCommand()
+    {
+        Icon = new IconInfo(new IconData("\uE72B")); // Back icon
+    }
+
+    public override ICommandResult Invoke()
+    {
+        return CommandResult.GoBack();
     }
 }
