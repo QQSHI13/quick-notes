@@ -5,16 +5,17 @@
 
 [Setup]
 AppId={{AB9CB241-4C93-413F-96AF-43B7F5EF8E47}}
-AppName=Quick Notes Extension
+AppName=Quick Notes
 AppVersion={#AppVersion}
 AppPublisher=QQ
 DefaultDirName={autopf}\QuickNotes
 OutputDir=bin\Release\installer
-OutputBaseFilename=QuickNotes-Setup-{#AppVersion}
+OutputBaseFilename=QuickNotes-Setup-{#AppVersion}-x64
 Compression=lzma
 SolidCompression=yes
 MinVersion=10.0.19041
-; Architectures will be set by build script for x64/arm64
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -28,3 +29,4 @@ Name: "{group}\Quick Notes"; Filename: "{app}\QuickNotes.exe"
 [Registry]
 Root: HKCU; Subkey: "SOFTWARE\Classes\CLSID\{{AB9CB241-4C93-413F-96AF-43B7F5EF8E47}}"; ValueData: "QuickNotes"
 Root: HKCU; Subkey: "SOFTWARE\Classes\CLSID\{{AB9CB241-4C93-413F-96AF-43B7F5EF8E47}}\LocalServer32"; ValueData: "{app}\QuickNotes.exe -RegisterProcessAsComServer"
+
