@@ -1,10 +1,15 @@
-# PowerShell Build Script for QuickNotes Command Palette Extension
-# Builds x64 and ARM64 installers for WinGet distribution
+# TEMPLATE: PowerShell Build Script for Command Palette Extensions
+#
+# To use this template for a new extension:
+# 1. Copy this file to your extension's project folder as "build-exe.ps1"
+# 2. Update in param():
+#   - EXTENSION_NAME with your extension name (e.g., CmdPalMyExtension) 
+#   - VERSION with your extension version (e.g., 0.0.1.0)
 
 param(
     [string]$ExtensionName = "QuickNotes",
     [string]$Configuration = "Release",
-    [string]$Version = "0.0.1.0",
+    [string]$Version = "0.0.2.0",
     [string[]]$Platforms = @("x64", "arm64")
 )
 
@@ -46,8 +51,7 @@ foreach ($Platform in $Platforms) {
         Write-Warning "Build failed for $Platform with exit code: $LASTEXITCODE"
         continue
     }
-
-    # Check if files were published
+# Check if files were published
     $publishDir = "$ProjectDir\bin\$Configuration\win-$Platform\publish"
     $fileCount = (Get-ChildItem -Path $publishDir -Recurse -File).Count
     Write-Host "✅ Published $fileCount files to $publishDir" -ForegroundColor Green
@@ -68,6 +72,8 @@ foreach ($Platform in $Platforms) {
     # Add architecture settings after [Setup] section
     if ($Platform -eq "arm64") {
         $setupScript = $setupScript -replace '(\[Setup\][^\[]*)(MinVersion=)', "`$1ArchitecturesAllowed=arm64`r`nArchitecturesInstallIn64BitMode=arm64`r`n`$2"
+    } else {
+        $setupScript = $setupScript -replace '(\[Setup\][^\[]*)(MinVersion=)', "`$1ArchitecturesAllowed=x64compatible`r`nArchitecturesInstallIn64BitMode=x64compatible`r`n`$2"
     }
     
     $setupScript | Out-File -FilePath "$ProjectDir\setup-$Platform.iss" -Encoding UTF8
