@@ -14,9 +14,19 @@ internal sealed partial class QuickNotesPage : ListPage
 {
     public QuickNotesPage()
     {
-        Icon = IconHelpers.FromRelativePath("Assets\\StoreLogo.png");
-        Title = "Quick Notes Extension";
-        Name = "Open";
+        var logPath = Path.Combine(Path.GetTempPath(), "quicknotes_debug.log");
+        try
+        {
+            File.AppendAllText(logPath, $"\n[{DateTime.Now}] QuickNotesPage created\n");
+            Icon = IconHelpers.FromRelativePath("Assets\\StoreLogo.png");
+            Title = "Quick Notes Extension";
+            Name = "Open";
+            File.AppendAllText(logPath, $"[{DateTime.Now}] QuickNotesPage initialized OK\n");
+        }
+        catch (Exception ex)
+        {
+            File.AppendAllText(logPath, $"[{DateTime.Now}] ERROR in QuickNotesPage ctor: {ex}\n");
+        }
     }
 
     public override IListItem[] GetItems()
