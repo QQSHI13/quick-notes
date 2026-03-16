@@ -20,47 +20,64 @@ internal sealed partial class QuickNotesPage : ListPage
 
     public override IListItem[] GetItems()
     {
-        var settings = SettingsService.GetSettings();
-        var notesDir = settings.NotesDirectory ?? GetDefaultNotesDirectory();
-        
-        // Check if there are any notes to sync
-        var hasNotes = Directory.Exists(notesDir) && Directory.GetFiles(notesDir, "*.md").Length > 0;
-
-        var items = new List<IListItem>
+        try
         {
-            new ListItem(new CreateNewNoteCommand()) 
-            { 
-                Title = "Create New", 
-                Subtitle = "Create a new markdown note",
-                Icon = new IconInfo(new IconData("\uE710")), // Add icon
-            },
-            new ListItem(new OpenExistingNotesPage()) 
-            { 
-                Title = "Open Existing", 
-                Subtitle = "Browse and open existing notes",
-                Icon = new IconInfo(new IconData("\uE8E5")), // Open folder icon
-            },
-        };
+            var settings = SettingsService.GetSettings();
+            var notesDir = settings.NotesDirectory ?? GetDefaultNotesDirectory();
+            
+            // Check if there are any notes to sync
+            var hasNotes = Directory.Exists(notesDir) && Directory.GetFiles(notesDir, "*.md").Length > 0;
 
-        // Add Sync All Titles option if there are notes
-        if (hasNotes)
-        {
-            items.Add(new ListItem(new SyncAllNoteTitlesCommand())
+            var items = new List<IListItem>
             {
-                Title = "Sync All Titles",
-                Subtitle = "Rename all notes to match their headings",
-                Icon = new IconInfo(new IconData("\uE8AC")), // Sync icon
+                new ListItem(new CreateNewNoteCommand()) 
+                { 
+                    Title = "Create New", 
+                    Subtitle = "Create a new markdown note",
+                    Icon = new IconInfo(new IconData("\uE710")), // Add icon
+                },
+                new ListItem(new OpenExistingNotesPage()) 
+                { 
+                    Title = "Open Existing", 
+                    Subtitle = "Browse and open existing notes",
+                    Icon = new IconInfo(new IconData("\uE8E5")), // Open folder icon
+                },
+            };
+
+            // Add Sync All Titles option if there are notes
+            if (hasNotes)
+            {
+                items.Add(new ListItem(new SyncAllNoteTitlesCommand())
+                {
+                    Title = "Sync All Titles",
+                    Subtitle = "Rename all notes to match their headings",
+                    Icon = new IconInfo(new IconData("\uE8AC")), // Sync icon
+                });
+            }
+
+            items.Add(new ListItem(new SettingsPage()) 
+            { 
+                Title = "Settings", 
+                Subtitle = "Configure notes directory",
+                Icon = new IconInfo(new IconData("\uE713")), // Settings icon
             });
+
+            return items.ToArray();
         }
-
-        items.Add(new ListItem(new SettingsPage()) 
-        { 
-            Title = "Settings", 
-            Subtitle = "Configure notes directory",
-            Icon = new IconInfo(new IconData("\uE713")), // Settings icon
-        });
-
-        return items.ToArray();
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[QUICKNOTES] Error in GetItems: {ex}");
+            // Return error item so user knows something went wrong
+            return new[]
+            {
+                new ListItem(new NoOpCommand())
+                {
+                    Title = "Error loading extension",
+                    Subtitle = ex.Message,
+                    Icon = new IconInfo(new IconData("\uE711")), // Error icon
+                }
+            };
+        }
     }
 
     private static string GetDefaultNotesDirectory()
