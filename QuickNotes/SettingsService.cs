@@ -68,13 +68,14 @@ public static class SettingsService
     private static void CreateSettingsWithComments()
     {
         var defaultDir = PathHelper.GetDefaultNotesDirectory();
-        var settingsContent = $"""{{
+        var settingsContent = """
+{
   // Quick Notes Extension Settings
   // ==============================
   
   // Directory where your markdown notes are saved
   // Default: Documents/QuickNotes folder
-  "notesDirectory": "{defaultDir.Replace("\\", "\\\\")}",
+  "notesDirectory": "{{DEFAULT_DIR}}",
   
   // Path to your preferred markdown editor
   // Examples: "notepad.exe", "code.exe", "typora.exe"
@@ -87,7 +88,8 @@ public static class SettingsService
   
   // List of recently opened notes (auto-populated)
   "recentNotes": []
-}}""";
+}
+""".Replace("{{DEFAULT_DIR}}", defaultDir.Replace("\\", "\\\\"));
 
         try
         {
