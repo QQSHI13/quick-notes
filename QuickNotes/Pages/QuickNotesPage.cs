@@ -14,19 +14,9 @@ internal sealed partial class QuickNotesPage : ListPage
 {
     public QuickNotesPage()
     {
-        var logPath = Path.Combine(Path.GetTempPath(), "quicknotes_debug.log");
-        try
-        {
-            File.AppendAllText(logPath, $"\n[{DateTime.Now}] QuickNotesPage created\n");
-            Icon = IconHelpers.FromRelativePath("Assets\\StoreLogo.png");
-            Title = "Quick Notes Extension";
-            Name = "Open";
-            File.AppendAllText(logPath, $"[{DateTime.Now}] QuickNotesPage initialized OK\n");
-        }
-        catch (Exception ex)
-        {
-            File.AppendAllText(logPath, $"[{DateTime.Now}] ERROR in QuickNotesPage ctor: {ex}\n");
-        }
+        Icon = IconHelpers.FromRelativePath("Assets\\StoreLogo.png");
+        Title = "Quick Notes Extension";
+        Name = "Open";
     }
 
     public override IListItem[] GetItems()
@@ -77,7 +67,6 @@ internal sealed partial class QuickNotesPage : ListPage
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[QUICKNOTES] Error in GetItems: {ex}");
             // Return error item so user knows something went wrong
             return new[]
             {
