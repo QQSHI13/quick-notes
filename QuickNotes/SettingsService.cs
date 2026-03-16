@@ -70,23 +70,13 @@ public static class SettingsService
         var defaultDir = PathHelper.GetDefaultNotesDirectory();
         var settingsContent = """
 {
-  // Quick Notes Extension Settings
-  // ==============================
-  
-  // Directory where your markdown notes are saved
-  // Default: Documents/QuickNotes folder
+  "_comment1": "Quick Notes Extension Settings",
+  "_comment2": "notesDirectory: Where your markdown notes are saved",
+  "_comment3": "defaultEditor: App to open notes (notepad.exe, code.exe, etc.)",
+  "_comment4": "maxRecentNotes: Number of recent notes to remember (1-50)",
   "notesDirectory": "{{DEFAULT_DIR}}",
-  
-  // Path to your preferred markdown editor
-  // Examples: "notepad.exe", "code.exe", "typora.exe"
-  // Default: notepad.exe (Windows Notepad)
   "defaultEditor": "notepad.exe",
-  
-  // Maximum number of recent notes to remember
-  // Default: 10
   "maxRecentNotes": 10,
-  
-  // List of recently opened notes (auto-populated)
   "recentNotes": []
 }
 """.Replace("{{DEFAULT_DIR}}", defaultDir.Replace("\\", "\\\\"));
