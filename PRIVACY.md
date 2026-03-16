@@ -20,6 +20,7 @@ Quick Notes Extension:
 ## Local Data Storage
 
 All your notes are stored locally in the directory you configure (default: `%USERPROFILE%\Documents\QuickNotes`).
+The settings are stored locally in %USERPROFILE%\AppData\Local\QuickNotes
 
 ## Third-Party Access
 
