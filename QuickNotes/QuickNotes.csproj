@@ -16,7 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Store Logo -->
+    <!-- Store Logo (base should be 200x200) -->
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\StoreLogo.scale-100.png" />
     <Content Include="Assets\StoreLogo.scale-125.png" />
