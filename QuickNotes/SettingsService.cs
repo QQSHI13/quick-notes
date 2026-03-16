@@ -56,19 +56,60 @@ public static class SettingsService
 
             if (!File.Exists(SettingsPath))
             {
-                var defaultSettings = new QuickNotesSettings
-                {
-                    NotesDirectory = PathHelper.GetDefaultNotesDirectory(),
-                    DefaultEditor = "notepad.exe",
-                    RecentNotes = new List<string>(),
-                    MaxRecentNotes = 10
-                };
-                SaveSettings(defaultSettings);
+                CreateSettingsWithComments();
             }
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[SETTINGS] Error ensuring settings file exists: {ex.Message}");
+        }
+    }
+
+    private static void CreateSettingsWithComments()
+    {
+        var defaultDir = PathHelper.GetDefaultNotesDirectory();
+        var settingsContent = $"""{{
+  // Quick Notes Extension Settings
+  // ==============================
+  
+  // Directory where your markdown notes are saved
+  // Default: Documents/QuickNotes folder
+  "notesDirectory": "{defaultDir.Replace("\\", "\\\\")}",
+  
+  // Path to your preferred markdown editor
+  // Examples: "notepad.exe", "code.exe", "typora.exe"
+  // Default: notepad.exe (Windows Notepad)
+  "defaultEditor": "notepad.exe",
+  
+  // Maximum number of recent notes to remember
+  // Default: 10
+  "maxRecentNotes": 10,
+  
+  // List of recently opened notes (auto-populated)
+  "recentNotes": []
+}}""";
+
+        try
+        {
+            var directory = Path.GetDirectoryName(SettingsPath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+            File.WriteAllText(SettingsPath, settingsContent);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[SETTINGS] Error creating settings with comments: {ex.Message}");
+            // Fallback to JSON serialization
+            var defaultSettings = new QuickNotesSettings
+            {
+                NotesDirectory = PathHelper.GetDefaultNotesDirectory(),
+                DefaultEditor = "notepad.exe",
+                RecentNotes = new List<string>(),
+                MaxRecentNotes = 10
+            };
+            SaveSettings(defaultSettings);
         }
     }
 
