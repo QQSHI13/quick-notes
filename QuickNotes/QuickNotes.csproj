@@ -13,6 +13,10 @@
     <PublishProfile>win-$(Platform).pubxml</PublishProfile>
     <EnableMsixTooling>true</EnableMsixTooling>
     <Nullable>enable</Nullable>
+
+    <AppxPackageIdentityName>QQSHI13.QuickNotesExtension</AppxPackageIdentityName>
+    <AppxPackagePublisher>CN=B5D1629E-C0CD-4FF8-AD56-A88FA56FE2C1</AppxPackagePublisher>
+    <AppxPackageVersion>0.0.3.0</AppxPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
