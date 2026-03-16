@@ -1,0 +1,135 @@
+name: Build and Release Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g., 0.3.0) - leave blank for auto-detect'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install Inno Setup
+        run: |
+          choco install innosetup -y
+
+      - name: Detect Version
+        id: version
+        shell: pwsh
+        run: |
+          if ('${{ github.event.inputs.version }}') {
+            $version = '${{ github.event.inputs.version }}'
+          } else {
+            [xml]$manifest = Get-Content QuickNotes/Package.appxmanifest
+            $version = $manifest.Package.Identity.Version
+          }
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "Version: $version"
+
+      - name: Build x64
+        shell: pwsh
+        run: |
+          cd QuickNotes
+          dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true
+          
+          # Create Inno Setup script
+          $version = '${{ steps.version.outputs.version }}'
+          $setupScript = @"
+[Setup]
+AppName=Quick Notes Extension
+AppVersion=$version
+AppPublisher=QQSHI13
+AppPublisherURL=https://github.com/QQSHI13/quick-notes
+DefaultDirName={autopf}\QuickNotesExtension
+OutputDir=..\releases
+OutputBaseFilename=QuickNotes-Setup-$version-x64
+Compression=lzma2
+SolidCompression=yes
+ArchitecturesInstallIn64BitMode=x64
+
+[Files]
+Source: "bin\Release\net9.0-windows10.0.26100.0\win-x64\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
+
+[Run]
+Filename: "{app}\QuickNotes.exe"; Parameters: "-RegisterProcessAsComServer"; Flags: postinstall skipifsilent
+"@
+          $setupScript | Out-File -FilePath setup-x64.iss -Encoding UTF8
+          
+          # Build installer
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\iscc.exe" setup-x64.iss
+
+      - name: Build ARM64
+        shell: pwsh
+        run: |
+          cd QuickNotes
+          dotnet publish -c Release -r win-arm64 --self-contained true /p:PublishSingleFile=true
+          
+          $version = '${{ steps.version.outputs.version }}'
+          $setupScript = @"
+[Setup]
+AppName=Quick Notes Extension
+AppVersion=$version
+AppPublisher=QQSHI13
+AppPublisherURL=https://github.com/QQSHI13/quick-notes
+DefaultDirName={autopf}\QuickNotesExtension
+OutputDir=..\releases
+OutputBaseFilename=QuickNotes-Setup-$version-arm64
+Compression=lzma2
+SolidCompression=yes
+ArchitecturesAllowed=arm64
+
+[Files]
+Source: "bin\Release\net9.0-windows10.0.26100.0\win-arm64\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
+
+[Run]
+Filename: "{app}\QuickNotes.exe"; Parameters: "-RegisterProcessAsComServer"; Flags: postinstall skipifsilent
+"@
+          $setupScript | Out-File -FilePath setup-arm64.iss -Encoding UTF8
+          
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\iscc.exe" setup-arm64.iss
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: QuickNotes-v${{ steps.version.outputs.version }}
+          name: Quick Notes Extension v${{ steps.version.outputs.version }}
+          files: |
+            releases/QuickNotes-Setup-${{ steps.version.outputs.version }}-x64.exe
+            releases/QuickNotes-Setup-${{ steps.version.outputs.version }}-arm64.exe
+          body: |
+            ## Quick Notes Extension v${{ steps.version.outputs.version }}
+            
+            A Windows Command Palette extension for quick note-taking.
+            
+            ### Installation
+            1. Download the appropriate installer for your system:
+               - x64: Most Windows PCs
+               - ARM64: Surface Pro X and other ARM devices
+            2. Run the installer
+            3. Open PowerToys Command Palette (Win + Alt + Space)
+            4. Type "Quick Notes" to use the extension
+            
+            ### Features
+            - Create timestamped markdown notes
+            - Browse and open existing notes
+            - Sync note titles with filenames
+            - Configurable notes directory
+            
+            ### Requirements
+            - Windows 10/11 (Build 19041+)
+            - PowerToys with Command Palette enabled
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
