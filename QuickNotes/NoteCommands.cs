@@ -31,6 +31,8 @@ public sealed partial class CreateNewNoteCommand : InvokableCommand
         {
             var settings = SettingsService.GetSettings();
             var notesDir = settings.NotesDirectory ?? PathHelper.GetDefaultNotesDirectory();
+            
+            Debug.WriteLine($"[CREATE NOTE] Notes directory: {notesDir}");
 
             // Validate notes directory
             if (!PathHelper.IsValidPath(notesDir))
@@ -42,6 +44,7 @@ public sealed partial class CreateNewNoteCommand : InvokableCommand
             // Ensure directory exists
             if (!Directory.Exists(notesDir))
             {
+                Debug.WriteLine($"[CREATE NOTE] Creating directory: {notesDir}");
                 Directory.CreateDirectory(notesDir);
             }
 
@@ -49,24 +52,32 @@ public sealed partial class CreateNewNoteCommand : InvokableCommand
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture);
             var fileName = $"Note_{timestamp}.md";
             var filePath = Path.Combine(notesDir, fileName);
+            
+            Debug.WriteLine($"[CREATE NOTE] Creating file: {filePath}");
 
             // Create file with template
             var template = _template ?? $"# Note {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}\n\n";
             File.WriteAllText(filePath, template);
+            
+            Debug.WriteLine($"[CREATE NOTE] File created successfully");
 
             // Open in configured editor
             if (!OpenFileHelper.OpenFileWithEditor(filePath))
             {
+                Debug.WriteLine($"[CREATE NOTE] Failed to open editor");
                 return CommandResult.Dismiss();
             }
 
             // Track as recent note
             RecentNotesService.AddRecentNote(filePath);
+            
+            Debug.WriteLine($"[CREATE NOTE] Note created and opened: {filePath}");
 
             return CommandResult.Dismiss();
         }
         catch (Exception ex)
         {
+            Debug.WriteLine($"[CREATE NOTE] ERROR: {ex}");
             ToastNotificationHelper.ShowError($"Failed to create note: {ex.Message}");
             return CommandResult.Dismiss();
         }
@@ -503,6 +514,8 @@ internal static class OpenFileHelper
 {
     public static bool OpenFileWithEditor(string filePath, string? editorPath = null)
     {
+        Debug.WriteLine($"[OPEN FILE] Opening: {filePath}");
+        
         if (string.IsNullOrWhiteSpace(filePath))
         {
             ToastNotificationHelper.ShowError("Invalid file path.");
@@ -511,6 +524,7 @@ internal static class OpenFileHelper
 
         if (!File.Exists(filePath))
         {
+            Debug.WriteLine($"[OPEN FILE] File does not exist: {filePath}");
             ToastNotificationHelper.ShowError("File does not exist.");
             return false;
         }
@@ -519,10 +533,13 @@ internal static class OpenFileHelper
         {
             var settings = SettingsService.GetSettings();
             var editor = editorPath ?? settings.DefaultEditor ?? "notepad.exe";
+            
+            Debug.WriteLine($"[OPEN FILE] Using editor: {editor}");
 
             // Validate editor path if it's a full path
             if (editor.Contains(Path.DirectorySeparatorChar) && !File.Exists(editor))
             {
+                Debug.WriteLine($"[OPEN FILE] Editor not found, falling back to notepad");
                 ToastNotificationHelper.ShowWarning($"Configured editor not found: {editor}. Falling back to notepad.");
                 editor = "notepad.exe";
             }
@@ -534,11 +551,14 @@ internal static class OpenFileHelper
                 UseShellExecute = true, // CRITICAL FIX: Must be true for opening files with external apps
             };
             
+            Debug.WriteLine($"[OPEN FILE] Starting process: {editor} \"{filePath}\"");
             Process.Start(psi);
+            Debug.WriteLine($"[OPEN FILE] Process started successfully");
             return true;
         }
         catch (Exception ex)
         {
+            Debug.WriteLine($"[OPEN FILE] ERROR: {ex}");
             ToastNotificationHelper.ShowError($"Failed to open file: {ex.Message}");
             return false;
         }
