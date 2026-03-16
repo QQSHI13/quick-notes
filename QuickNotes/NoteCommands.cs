@@ -27,16 +27,20 @@ public sealed partial class CreateNewNoteCommand : InvokableCommand
 
     public override ICommandResult Invoke()
     {
+        var logPath = Path.Combine(Path.GetTempPath(), "quicknotes_debug.log");
+        File.AppendAllText(logPath, $"\n[{DateTime.Now}] CREATE NOTE STARTED\n");
+        
         try
         {
             var settings = SettingsService.GetSettings();
             var notesDir = settings.NotesDirectory ?? PathHelper.GetDefaultNotesDirectory();
             
-            Debug.WriteLine($"[CREATE NOTE] Notes directory: {notesDir}");
+            File.AppendAllText(logPath, $"[{DateTime.Now}] Notes directory: {notesDir}\n");
 
             // Validate notes directory
             if (!PathHelper.IsValidPath(notesDir))
             {
+                File.AppendAllText(logPath, $"[{DateTime.Now}] ERROR: Invalid path\n");
                 ToastNotificationHelper.ShowError("Invalid notes directory path configured.");
                 return CommandResult.Dismiss();
             }
@@ -44,7 +48,7 @@ public sealed partial class CreateNewNoteCommand : InvokableCommand
             // Ensure directory exists
             if (!Directory.Exists(notesDir))
             {
-                Debug.WriteLine($"[CREATE NOTE] Creating directory: {notesDir}");
+                File.AppendAllText(logPath, $"[{DateTime.Now}] Creating directory: {notesDir}\n");
                 Directory.CreateDirectory(notesDir);
             }
 
@@ -53,31 +57,31 @@ public sealed partial class CreateNewNoteCommand : InvokableCommand
             var fileName = $"Note_{timestamp}.md";
             var filePath = Path.Combine(notesDir, fileName);
             
-            Debug.WriteLine($"[CREATE NOTE] Creating file: {filePath}");
+            File.AppendAllText(logPath, $"[{DateTime.Now}] Creating file: {filePath}\n");
 
             // Create file with template
             var template = _template ?? $"# Note {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}\n\n";
             File.WriteAllText(filePath, template);
             
-            Debug.WriteLine($"[CREATE NOTE] File created successfully");
+            File.AppendAllText(logPath, $"[{DateTime.Now}] File created successfully\n");
 
             // Open in configured editor
             if (!OpenFileHelper.OpenFileWithEditor(filePath))
             {
-                Debug.WriteLine($"[CREATE NOTE] Failed to open editor");
+                File.AppendAllText(logPath, $"[{DateTime.Now}] ERROR: Failed to open editor\n");
                 return CommandResult.Dismiss();
             }
 
             // Track as recent note
             RecentNotesService.AddRecentNote(filePath);
             
-            Debug.WriteLine($"[CREATE NOTE] Note created and opened: {filePath}");
+            File.AppendAllText(logPath, $"[{DateTime.Now}] SUCCESS: Note created and opened\n");
 
             return CommandResult.Dismiss();
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[CREATE NOTE] ERROR: {ex}");
+            File.AppendAllText(logPath, $"[{DateTime.Now}] EXCEPTION: {ex}\n");
             ToastNotificationHelper.ShowError($"Failed to create note: {ex.Message}");
             return CommandResult.Dismiss();
         }
