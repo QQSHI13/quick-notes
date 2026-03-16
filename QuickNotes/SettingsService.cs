@@ -107,6 +107,9 @@ public static class SettingsService
 
     public static QuickNotesSettings GetSettings()
     {
+        // Ensure settings file exists before trying to read it
+        EnsureSettingsFileExists();
+        
         if (_cachedSettings != null)
             return _cachedSettings;
 
