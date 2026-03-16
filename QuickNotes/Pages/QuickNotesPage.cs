@@ -14,7 +14,7 @@ internal sealed partial class QuickNotesPage : ListPage
     public QuickNotesPage()
     {
         Icon = IconHelpers.FromRelativePath("Assets\\StoreLogo.png");
-        Title = "Quick Notes";
+        Title = "Quick Notes Extension";
         Name = "Open";
     }
 

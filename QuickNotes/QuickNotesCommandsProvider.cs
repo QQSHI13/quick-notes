@@ -13,7 +13,7 @@ public partial class QuickNotesCommandsProvider : CommandProvider
 
     public QuickNotesCommandsProvider()
     {
-        DisplayName = "Quick Notes";
+        DisplayName = "Quick Notes Extension";
         Icon = IconHelpers.FromRelativePath("Assets\\StoreLogo.png");
         _commands = [
             new CommandItem(new QuickNotesPage()) { Title = DisplayName },

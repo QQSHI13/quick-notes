@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
@@ -6,16 +6,18 @@
   xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
   xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap uap3 rescap com">
+  IgnorableNamespaces="uap uap3 rescap">
 
   <Identity
-    Name="QQSHI13.QuickNotesExtension"
-    Publisher="CN=B5D1629E-C0CD-4FF8-AD56-A88FA56FE2C1"
+    Name="QuickNotes"
+    Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
     Version="0.0.1.0" />
+  <!-- When you're ready to publish your extension, you'll need to change the
+       Publisher= to match your own identity -->
 
   <Properties>
     <DisplayName>Quick Notes Extension</DisplayName>
-    <PublisherDisplayName>QQSHI13</PublisherDisplayName>
+    <PublisherDisplayName>A Lone Developer</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
@@ -29,25 +31,23 @@
   </Resources>
 
   <Applications>
-	  <Application Id="App"
-	    Executable="QuickNotes.exe"
-	    EntryPoint="QuickNotes.App">
-		  <uap:VisualElements
-        DisplayName="Quick Notes"
-        Description="Quick Notes"
+    <Application Id="App"
+      Executable="$targetnametoken$.exe"
+      EntryPoint="$targetentrypoint$">
+      <uap:VisualElements
+        DisplayName="Quick Notes Extension"
+        Description="Quick Notes Extension"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
-        <uap:InitialRotationPreference>
-          <uap:Rotation Preference="landscape"/></uap:InitialRotationPreference>
       </uap:VisualElements>
       <Extensions>
         <com:Extension Category="windows.comServer">
           <com:ComServer>
-            <com:ExeServer Executable="QuickNotes.exe" Arguments="-RegisterProcessAsComServer" DisplayName="Quick Notes">
-              <com:Class Id="ab9cb241-4c93-413f-96af-43b7f5ef8e47" DisplayName="Quick Notes" />
+            <com:ExeServer Executable="QuickNotes.exe" Arguments="-RegisterProcessAsComServer" DisplayName="Quick Notes Extension">
+              <com:Class Id="2e9692a6-4e82-4eb8-85c7-a8d3cede95de" DisplayName="Quick Notes Extension" />
             </com:ExeServer>
           </com:ComServer>
         </com:Extension>
@@ -55,12 +55,12 @@
           <uap3:AppExtension Name="com.microsoft.commandpalette"
             Id="ID"
             PublicFolder="Public"
-            DisplayName="Quick Notes"
-            Description="Quick Notes">
+            DisplayName="Quick Notes Extension"
+            Description="Quick Notes Extension">
             <uap3:Properties>
               <CmdPalProvider>
                 <Activation>
-                  <CreateInstance ClassId="ab9cb241-4c93-413f-96af-43b7f5ef8e47" />
+                  <CreateInstance ClassId="2e9692a6-4e82-4eb8-85c7-a8d3cede95de" />
                 </Activation>
                 <SupportedInterfaces>
                   <Commands/>
