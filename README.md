@@ -22,13 +22,7 @@ A Windows Command Palette extension for instant note-taking. Create timestamped 
 Install directly from the Microsoft Store:  
 [Quick Notes on Microsoft Store](https://apps.microsoft.com/store/detail/9P8M54K17J8L?cid=DevShareMCLPCS)
 
-### Method 1: Windows Package Manager (winget) — Recommended
-
-```powershell
-winget install QuickNotes
-```
-
-### Method 2: Manual Install
+### Method 1: Manual Install
 
 1. Install [PowerToys](https://github.com/microsoft/PowerToys) (includes Windows Command Palette)
 2. Download the latest `.msixbundle` from [Releases](https://github.com/QQSHI13/quick-notes/releases)
