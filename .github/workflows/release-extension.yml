@@ -93,19 +93,22 @@ jobs:
           
           Write-Host "Using signtool: $signtool"
           
-          # Try to sign the bundle (don't fail if it doesn't work)
-          try {
-            & $signtool sign `
-              /fd SHA256 `
-              /f $certPath `
-              /p $password `
-              /tr http://timestamp.digicert.com `
-              /td SHA256 `
-              $bundlePath
-            Write-Host "✅ Bundle signed successfully!"
-          } catch {
-            Write-Host "⚠️ Signing failed (bundle may already be signed or have issues): $_"
+          # Try to sign the bundle - check exit code manually
+          & $signtool sign `
+            /fd SHA256 `
+            /f $certPath `
+            /p $password `
+            /tr http://timestamp.digicert.com `
+            /td SHA256 `
+            $bundlePath
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "⚠️ Signing failed with exit code $LASTEXITCODE (bundle may already be signed or have issues)"
             Write-Host "Continuing with unsigned bundle..."
+            # Reset exit code so the step doesn't fail
+            $global:LASTEXITCODE = 0
+          } else {
+            Write-Host "✅ Bundle signed successfully!"
           }
 
       - name: Upload Artifact
