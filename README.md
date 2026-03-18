@@ -17,17 +17,47 @@ A Windows Command Palette extension for instant note-taking. Create timestamped 
 
 ## 📥 Installation
 
-### Method 0: Microsoft Store — Easiest
+### Method 0: Microsoft Store — Easiest (Recommended)
 
 Install directly from the Microsoft Store:  
 [Quick Notes on Microsoft Store](https://apps.microsoft.com/store/detail/9P8M54K17J8L?cid=DevShareMCLPCS)
 
-### Method 1: Manual Install
+✅ **Why Microsoft Store?**
+- Fully trusted by Windows (no security warnings)
+- Automatic updates
+- No manual certificate installation needed
+
+### Method 1: GitHub Releases — Manual Install
 
 1. Install [PowerToys](https://github.com/microsoft/PowerToys) (includes Windows Command Palette)
 2. Download the latest `.msixbundle` from [Releases](https://github.com/QQSHI13/quick-notes/releases)
-3. Double-click to install the package
-4. Restart Command Palette (Win + Alt + Space)
+3. ⚠️ **Install the self-signed certificate** (see below)
+4. Double-click to install the package
+5. Restart Command Palette (Win + Alt + Space)
+
+#### 🔒 Installing the Self-Signed Certificate
+
+Since GitHub releases use a self-signed certificate, Windows will show a security warning. Follow these steps to trust the certificate:
+
+**Step 1: Download the certificate from the release**
+- Each GitHub release includes a `.cer` or `.pfx` file
+- Download it along with the `.msixbundle`
+
+**Step 2: Install the certificate**
+1. Right-click the certificate file → **Install Certificate**
+2. Select **Local Machine** → Click **Next**
+3. Select **Place all certificates in the following store** → Click **Browse**
+4. Select **Trusted People** → Click **OK**
+5. Click **Next** → Click **Finish**
+
+**Step 3: Install the app**
+- Double-click the `.msixbundle` file
+- Windows will now trust the app and allow installation
+
+**Alternative: Manual certificate extraction**
+If you don't have the certificate file, you can extract it from the `.msixbundle`:
+1. Rename `.msixbundle` to `.zip` and extract it
+2. Find the certificate inside and install it as described above
 
 ---
 
