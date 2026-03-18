@@ -23,8 +23,7 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Install Inno Setup
-        run: |
-          choco install innosetup -y
+        run: choco install innosetup -y
 
       - name: Detect Version
         id: version
@@ -45,30 +44,28 @@ jobs:
           cd QuickNotes
           dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true
           
-          # Create Inno Setup script
           $version = '${{ steps.version.outputs.version }}'
-          $setupScript = @"
+          $setupScript = @'
 [Setup]
 AppName=Quick Notes Extension
-AppVersion=$version
+AppVersion={0}
 AppPublisher=QQSHI13
 AppPublisherURL=https://github.com/QQSHI13/quick-notes
-DefaultDirName={autopf}\QuickNotesExtension
+DefaultDirName={{autopf}}\QuickNotesExtension
 OutputDir=..\releases
-OutputBaseFilename=QuickNotes-Setup-$version-x64
+OutputBaseFilename=QuickNotes-Setup-{0}-x64
 Compression=lzma2
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64
 
 [Files]
-Source: "bin\Release\net9.0-windows10.0.26100.0\win-x64\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
+Source: "bin\Release\net9.0-windows10.0.26100.0\win-x64\publish\*"; DestDir: "{{app}}"; Flags: ignoreversion recursesubdirs
 
 [Run]
-Filename: "{app}\QuickNotes.exe"; Parameters: "-RegisterProcessAsComServer"; Flags: postinstall skipifsilent
-"@
+Filename: "{{app}}\QuickNotes.exe"; Parameters: "-RegisterProcessAsComServer"; Flags: postinstall skipifsilent
+'@ -f $version
           $setupScript | Out-File -FilePath setup-x64.iss -Encoding UTF8
           
-          # Build installer
           & "${env:ProgramFiles(x86)}\Inno Setup 6\iscc.exe" setup-x64.iss
 
       - name: Build ARM64
@@ -78,25 +75,25 @@ Filename: "{app}\QuickNotes.exe"; Parameters: "-RegisterProcessAsComServer"; Fla
           dotnet publish -c Release -r win-arm64 --self-contained true /p:PublishSingleFile=true
           
           $version = '${{ steps.version.outputs.version }}'
-          $setupScript = @"
+          $setupScript = @'
 [Setup]
 AppName=Quick Notes Extension
-AppVersion=$version
+AppVersion={0}
 AppPublisher=QQSHI13
 AppPublisherURL=https://github.com/QQSHI13/quick-notes
-DefaultDirName={autopf}\QuickNotesExtension
+DefaultDirName={{autopf}}\QuickNotesExtension
 OutputDir=..\releases
-OutputBaseFilename=QuickNotes-Setup-$version-arm64
+OutputBaseFilename=QuickNotes-Setup-{0}-arm64
 Compression=lzma2
 SolidCompression=yes
 ArchitecturesAllowed=arm64
 
 [Files]
-Source: "bin\Release\net9.0-windows10.0.26100.0\win-arm64\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
+Source: "bin\Release\net9.0-windows10.0.26100.0\win-arm64\publish\*"; DestDir: "{{app}}"; Flags: ignoreversion recursesubdirs
 
 [Run]
-Filename: "{app}\QuickNotes.exe"; Parameters: "-RegisterProcessAsComServer"; Flags: postinstall skipifsilent
-"@
+Filename: "{{app}}\QuickNotes.exe"; Parameters: "-RegisterProcessAsComServer"; Flags: postinstall skipifsilent
+'@ -f $version
           $setupScript | Out-File -FilePath setup-arm64.iss -Encoding UTF8
           
           & "${env:ProgramFiles(x86)}\Inno Setup 6\iscc.exe" setup-arm64.iss
