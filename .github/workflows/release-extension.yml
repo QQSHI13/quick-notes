@@ -35,13 +35,19 @@ jobs:
           echo "version=$version" >> $env:GITHUB_OUTPUT
           echo "Version: $version"
 
+      - name: Build MSIX Bundle
+        shell: pwsh
+        run: |
+          cd QuickNotes
+          dotnet build -c Release
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: QuickNotes-v${{ steps.version.outputs.version }}
           name: Quick Notes Extension v${{ steps.version.outputs.version }}
           files: |
-            QuickNotes/QuickNotes_0.3.0.0_Bundle.msixbundle
+            QuickNotes/AppPackages/**/*.msixbundle
           body: |
             ## Quick Notes Extension v${{ steps.version.outputs.version }}
             
