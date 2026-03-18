@@ -26,46 +26,74 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          if ('${{ github.event.inputs.version }}') {
-            $version = '${{ github.event.inputs.version }}'
-          } else {
+          $inputVersion = "${{ github.event.inputs.version }}"
+          if (-not $inputVersion) {
             [xml]$manifest = Get-Content QuickNotes/Package.appxmanifest
             $version = $manifest.Package.Identity.Version
+          } else {
+            $version = $inputVersion
           }
-          echo "version=$version" >> $env:GITHUB_OUTPUT
-          echo "Version: $version"
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Detected Version: $version"
+
+      - name: Create Self-Signed Certificate
+        id: create_cert
+        shell: pwsh
+        run: |
+          # The CN must match the 'Publisher' attribute in your Package.appxmanifest
+          $cert = New-SelfSignedCertificate -Type Custom `
+            -Subject "CN=QuickNotesDev" `
+            -KeyUsage DigitalSignature `
+            -FriendlyName "QuickNotes Dev Cert" `
+            -CertStoreLocation "Cert:\CurrentUser\My" `
+            -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
+          
+          $password = ConvertTo-SecureString "Password123" -AsPlainText -Force
+          Export-PfxCertificate -Cert $cert -FilePath "cert.pfx" -Password $password
+          Write-Host "Certificate created and exported to cert.pfx"
 
       - name: Build MSIX Bundle
         shell: pwsh
         run: |
-          dotnet build QuickNotes.sln -c Release -p:GenerateAppxPackageOnBuild=true -p:AppxBundle=Always -p:AppxBundlePlatforms="x64|arm64"
+          dotnet build QuickNotes.sln -c Release `
+            -p:GenerateAppxPackageOnBuild=true `
+            -p:AppxBundle=Always `
+            -p:AppxBundlePlatforms="x64|arm64" `
+            -p:UapAppxPackageBuildMode=Sideloading
+
+      - name: Sign MSIX Bundle
+        shell: pwsh
+        run: |
+          # Find the bundle - using a broad search to ensure it's caught
+          $bundle = Get-ChildItem -Path "**/AppPackages/**/*.msixbundle" | Select-Object -First 1
+          if (-not $bundle) { throw "MSIX Bundle not found!" }
+          
+          # Locating signtool.exe (usually in Windows SDK paths on the runner)
+          $signtool = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
+          & $signtool sign /fd SHA256 /a /f cert.pfx /p Password123 $bundle.FullName
+          Write-Host "Successfully signed $($bundle.Name)"
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: QuickNotes-v${{ steps.version.outputs.version }}
+          tag_name: v${{ steps.version.outputs.version }}
           name: Quick Notes Extension v${{ steps.version.outputs.version }}
           files: |
-            QuickNotes/AppPackages/**/*.msixbundle
+            **/AppPackages/**/*.msixbundle
           body: |
             ## Quick Notes Extension v${{ steps.version.outputs.version }}
-            
+
             A Windows Command Palette extension for quick note-taking.
-            
+
             ### Installation
-            1. Download the MSIX bundle
-            2. Double-click to install
-            3. Open PowerToys Command Palette (Win + Alt + Space)
-            4. Type "Quick Notes" to use the extension
-            
+            1. Download the MSIX bundle.
+            2. **Important:** Since this is self-signed, you must right-click the bundle -> Properties -> Digital Signatures -> View Certificate -> Install Certificate (Local Machine -> Trusted People).
+            3. Double-click to install.
+
             ### Features
             - Create timestamped markdown notes
             - Browse and open existing notes
             - Sync note titles with filenames
             - Configurable notes directory
-            
-            ### Requirements
-            - Windows 10/11 (Build 19041+)
-            - PowerToys with Command Palette enabled
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
