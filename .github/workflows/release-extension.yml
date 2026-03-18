@@ -36,21 +36,35 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "version=$version"
           Write-Host "Detected Version: $version"
 
-      - name: Build Solution
+      - name: Build MSIX Bundle
         shell: pwsh
-        run: dotnet build QuickNotes.sln -c Release
+        run: |
+          dotnet build QuickNotes.sln -c Release `
+            -p:GenerateAppxPackageOnBuild=true `
+            -p:AppxBundle=Always `
+            -p:AppxBundlePlatforms="x64|arm64"
 
       - name: Find MSIX Bundle
         id: find_bundle
         shell: pwsh
         run: |
-          $bundle = Get-ChildItem -Path "QuickNotes/AppPackages" -Filter "*.msixbundle" -Recurse | Select-Object -First 1
+          $bundle = Get-ChildItem -Path "QuickNotes/AppPackages" -Filter "*.msixbundle" -Recurse | Sort-Object LastWriteTime -Descending | Select-Object -First 1
           if ($bundle) {
             Add-Content -Path $env:GITHUB_OUTPUT -Value "bundle_path=$($bundle.FullName)"
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "bundle_name=$($bundle.Name)"
             Write-Host "Found bundle: $($bundle.FullName)"
           } else {
             Write-Host "No bundle found"
+            Write-Host "Files in AppPackages:"
+            Get-ChildItem -Path "QuickNotes/AppPackages" -Recurse | ForEach-Object { Write-Host $_.FullName }
           }
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        if: steps.find_bundle.outputs.bundle_path != ''
+        with:
+          name: ${{ steps.find_bundle.outputs.bundle_name }}
+          path: ${{ steps.find_bundle.outputs.bundle_path }}
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
