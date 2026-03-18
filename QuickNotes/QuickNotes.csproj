@@ -15,8 +15,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+
+
   <ItemGroup>
-    <Content Include="Assets\**\*.png" />
+    <Content Include="Assets\*.scale-100.png" />
   </ItemGroup>
 
   <ItemGroup>

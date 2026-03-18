@@ -1,0 +1,3 @@
+[Files]
+"AppPackages\x64\QuickNotes_0.3.0.0_x64_Test\QuickNotes_0.3.0.0_x64.msix" "QuickNotes_0.3.0.0_x64.msix"
+"AppPackages\ARM64\QuickNotes_0.3.0.0_arm64_Test\QuickNotes_0.3.0.0_arm64.msix" "QuickNotes_0.3.0.0_arm64.msix"
