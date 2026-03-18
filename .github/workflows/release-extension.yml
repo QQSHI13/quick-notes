@@ -38,8 +38,7 @@ jobs:
       - name: Build MSIX Bundle
         shell: pwsh
         run: |
-          cd QuickNotes
-          dotnet build -c Release
+          dotnet build QuickNotes.sln -c Release -p:GenerateAppxPackageOnBuild=true -p:AppxBundle=Always -p:AppxBundlePlatforms="x64|arm64"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
