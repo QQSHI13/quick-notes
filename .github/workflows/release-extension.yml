@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   build:
@@ -59,11 +60,82 @@ jobs:
             Get-ChildItem -Path "QuickNotes/AppPackages" -Recurse | ForEach-Object { Write-Host $_.FullName }
           }
 
-      - name: Upload Artifact
+      - name: Upload Unsigned Artifact
         uses: actions/upload-artifact@v4
         if: steps.find_bundle.outputs.bundle_path != ''
         with:
-          name: ${{ steps.find_bundle.outputs.bundle_name }}
+          name: unsigned-${{ steps.find_bundle.outputs.bundle_name }}
+          path: ${{ steps.find_bundle.outputs.bundle_path }}
+
+      - name: Create Self-Signed Certificate
+        id: create_cert
+        shell: pwsh
+        run: |
+          $cert = New-SelfSignedCertificate `
+            -Type Custom `
+            -Subject "CN=QQSHI13" `
+            -KeyUsage DigitalSignature `
+            -FriendlyName "QuickNotes Signing Cert" `
+            -CertStoreLocation "Cert:\CurrentUser\My" `
+            -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
+          
+          $thumbprint = $cert.Thumbprint
+          $password = ConvertTo-SecureString "TempPassword123!" -AsPlainText -Force
+          Export-PfxCertificate -Cert "Cert:\CurrentUser\My\$thumbprint" -FilePath "signing-cert.pfx" -Password $password
+          
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "thumbprint=$thumbprint"
+          Write-Host "Certificate created with thumbprint: $thumbprint"
+
+      - name: Sign MSIX Bundle
+        shell: pwsh
+        run: |
+          $bundlePath = "${{ steps.find_bundle.outputs.bundle_path }}"
+          $certPath = "signing-cert.pfx"
+          $password = "TempPassword123!"
+          
+          # Find signtool
+          $sdkPaths = @(
+            "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe",
+            "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22000.0\x64\signtool.exe",
+            "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.19041.0\x64\signtool.exe",
+            "${env:ProgramFiles(x86)}\Windows Kits\8.1\bin\x64\signtool.exe"
+          )
+          
+          $signtool = $null
+          foreach ($path in $sdkPaths) {
+            if (Test-Path $path) {
+              $signtool = $path
+              break
+            }
+          }
+          
+          if (-not $signtool) {
+            # Try to find it
+            $signtool = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Windows Kits" -Recurse -Filter "signtool.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+          }
+          
+          if (-not $signtool) {
+            throw "signtool.exe not found!"
+          }
+          
+          Write-Host "Using signtool: $signtool"
+          
+          # Sign the bundle
+          & $signtool sign `
+            /fd SHA256 `
+            /f $certPath `
+            /p $password `
+            /tr http://timestamp.digicert.com `
+            /td SHA256 `
+            $bundlePath
+          
+          Write-Host "Bundle signed successfully!"
+
+      - name: Upload Signed Artifact
+        uses: actions/upload-artifact@v4
+        if: steps.find_bundle.outputs.bundle_path != ''
+        with:
+          name: signed-${{ steps.find_bundle.outputs.bundle_name }}
           path: ${{ steps.find_bundle.outputs.bundle_path }}
 
       - name: Create Release
@@ -79,13 +151,20 @@ jobs:
             A Windows Command Palette extension for quick note-taking.
 
             ### Installation
-            - **Microsoft Store**: https://apps.microsoft.com/store/detail/9P8M54K17J8L?cid=DevShareMCLPCS
-            - Or download the MSIX bundle below and install manually
+            - **Microsoft Store** (Recommended): https://apps.microsoft.com/store/detail/9P8M54K17J8L?cid=DevShareMCLPCS
+            - **Manual Install**: Download the MSIX bundle below
+              1. Right-click the bundle → Properties → Digital Signatures
+              2. View Certificate → Install Certificate
+              3. Install to Local Machine → Trusted People
+              4. Double-click the bundle to install
 
             ### Features
             - Create timestamped markdown notes
             - Browse and open existing notes
             - Sync note titles with filenames
             - Configurable notes directory
+
+            ### Note
+            This release is signed with a self-signed certificate. For the best experience, install from the Microsoft Store above.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
