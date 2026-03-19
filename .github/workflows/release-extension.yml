@@ -65,13 +65,15 @@ jobs:
           $workspace = $env:GITHUB_WORKSPACE
           Write-Host "Working in workspace: $workspace"
           
+          # Create a proper code signing certificate
           $cert = New-SelfSignedCertificate `
-            -Type Custom `
             -Subject "CN=QQSHI13" `
+            -Type CodeSigningCert `
             -KeyUsage DigitalSignature `
-            -FriendlyName "QuickNotes Signing Cert" `
+            -KeyAlgorithm RSA `
+            -KeyLength 2048 `
             -CertStoreLocation "Cert:\CurrentUser\My" `
-            -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
+            -Provider "Microsoft Enhanced RSA and AES Cryptographic Provider"
           
           $thumbprint = $cert.Thumbprint
           $password = ConvertTo-SecureString "TempCert123!" -AsPlainText -Force
