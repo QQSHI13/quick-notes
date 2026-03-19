@@ -73,40 +73,56 @@ jobs:
           $thumbprint = $cert.Thumbprint
           $password = ConvertTo-SecureString "TempCert123!" -AsPlainText -Force
           Export-PfxCertificate -Cert "Cert:\CurrentUser\My\$thumbprint" -FilePath "signing-cert.pfx" -Password $password
+          Export-Certificate -Cert "Cert:\CurrentUser\My\$thumbprint" -FilePath "signing-cert.cer"
           
           Write-Host "Certificate created with thumbprint: $thumbprint"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "cert_pfx=signing-cert.pfx"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "cert_cer=signing-cert.cer"
 
       - name: Sign MSIX Bundle
         shell: pwsh
         run: |
           $bundlePath = "${{ steps.find_bundle.outputs.bundle_path }}"
           $certPath = "signing-cert.pfx"
-          $password = "TempCert123!"
+          $password = ConvertTo-SecureString "TempCert123!" -AsPlainText -Force
           
-          # Find signtool
-          $signtool = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Windows Kits" -Recurse -Filter "signtool.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+          # Find signtool - prefer Windows 10 SDK
+          $signtoolPaths = @(
+            "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe",
+            "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22000.0\x64\signtool.exe",
+            "${env:ProgramFiles(x86)}\Windows Kits\10\bin\x64\signtool.exe"
+          )
+          
+          $signtool = $signtoolPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
           
           if (-not $signtool) {
-            Write-Host "⚠️ signtool.exe not found, skipping signing"
+            Write-Host "⚠️ signtool.exe not found, trying to sign with PowerShell..."
+            # Try alternative signing method
+            try {
+              Add-Type -AssemblyName System.Security
+              $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($certPath, $password)
+              Write-Host "✅ Certificate loaded successfully (thumbprint: $($cert.Thumbprint))"
+              Write-Host "⚠️ But signtool is still needed for MSIX signing - skipping automated signing"
+            } catch {
+              Write-Host "⚠️ Failed to load certificate: $_"
+            }
             exit 0
           }
           
           Write-Host "Using signtool: $signtool"
           
-          # Try to sign the bundle - check exit code manually
+          # Sign the bundle - fail the step if signing fails
           & $signtool sign `
             /fd SHA256 `
             /f $certPath `
-            /p $password `
+            /p "TempCert123!" `
             /tr http://timestamp.digicert.com `
             /td SHA256 `
             $bundlePath
           
           if ($LASTEXITCODE -ne 0) {
-            Write-Host "⚠️ Signing failed with exit code $LASTEXITCODE (bundle may already be signed or have issues)"
-            Write-Host "Continuing with unsigned bundle..."
-            # Reset exit code so the step doesn't fail
-            $global:LASTEXITCODE = 0
+            Write-Host "❌ Signing failed with exit code $LASTEXITCODE"
+            exit 1
           } else {
             Write-Host "✅ Bundle signed successfully!"
           }
@@ -115,14 +131,20 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: QuickNotes-v${{ steps.version.outputs.version }}
-          path: ${{ steps.find_bundle.outputs.bundle_path }}
+          path: |
+            ${{ steps.find_bundle.outputs.bundle_path }}
+            ${{ steps.create_cert.outputs.cert_pfx }}
+            ${{ steps.create_cert.outputs.cert_cer }}
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: Quick Notes Extension v${{ steps.version.outputs.version }}
-          files: ${{ steps.find_bundle.outputs.bundle_path }}
+          files: |
+            ${{ steps.find_bundle.outputs.bundle_path }}
+            ${{ steps.create_cert.outputs.cert_pfx }}
+            ${{ steps.create_cert.outputs.cert_cer }}
           body: |
             ## Quick Notes Extension v${{ steps.version.outputs.version }}
 
