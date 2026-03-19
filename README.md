@@ -19,8 +19,10 @@ A Windows Command Palette extension for instant note-taking. Create timestamped 
 
 ### Method 0: Microsoft Store — Easiest (Recommended)
 
-Install directly from the Microsoft Store:  
-[Quick Notes on Microsoft Store](https://apps.microsoft.com/store/detail/9P8M54K17J8L?cid=DevShareMCLPCS)
+Install directly from Microsoft Store:  
+<a href="https://get.microsoft.com/installer/download/9p8m54k17j8l?referrer=appbadge" target="_self" >
+	<img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200"/>
+</a>
 
 ✅ **Why Microsoft Store?**
 - Fully trusted by Windows (no security warnings)
