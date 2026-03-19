@@ -14,11 +14,12 @@ public sealed partial class QuickNotes : IExtension, IDisposable
 {
     private readonly ManualResetEvent _extensionDisposedEvent;
 
-    private readonly QuickNotesCommandsProvider _provider = new();
+    private readonly QuickNotesCommandsProvider _provider;
 
     public QuickNotes(ManualResetEvent extensionDisposedEvent)
     {
         this._extensionDisposedEvent = extensionDisposedEvent;
+        this._provider = new QuickNotesCommandsProvider();
     }
 
     public object? GetProvider(ProviderType providerType)
@@ -30,5 +31,9 @@ public sealed partial class QuickNotes : IExtension, IDisposable
         };
     }
 
-    public void Dispose() => this._extensionDisposedEvent.Set();
+    public void Dispose()
+    {
+        _provider?.Dispose();
+        this._extensionDisposedEvent.Set();
+    }
 }

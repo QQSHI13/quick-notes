@@ -22,8 +22,8 @@ internal sealed partial class EditorConfigurationPage : ListPage
         Name = "Configure Editor";
     }
 
-    // Called when user types in the search box
-    public void UpdateQuery(string query)
+    // Called when user types in the search box - override to capture input
+    public override void UpdateQuery(string query)
     {
         _editorPath = query?.Trim() ?? string.Empty;
     }

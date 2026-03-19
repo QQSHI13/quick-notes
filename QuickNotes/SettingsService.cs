@@ -110,13 +110,17 @@ public static class SettingsService
         // Ensure settings file exists before trying to read it
         EnsureSettingsFileExists();
         
-        if (_cachedSettings != null)
-            return _cachedSettings;
+        // Read into local variable to avoid race condition
+        var cached = _cachedSettings;
+        if (cached != null)
+            return cached;
 
         lock (_settingsLock)
         {
-            if (_cachedSettings != null)
-                return _cachedSettings;
+            // Double-check after acquiring lock
+            cached = _cachedSettings;
+            if (cached != null)
+                return cached;
 
             try
             {

@@ -10,13 +10,26 @@ using Microsoft.CommandPalette.Extensions.Toolkit;
 
 namespace QuickNotes;
 
-internal sealed partial class QuickNotesPage : ListPage
+internal sealed partial class QuickNotesPage : ListPage, IDisposable
 {
+    private readonly OpenExistingNotesPage _openExistingPage;
+    private bool _disposed;
+
     public QuickNotesPage()
     {
         Icon = IconHelpers.FromRelativePath("Assets\\StoreLogo.png");
         Title = "Quick Notes Extension";
         Name = "Open";
+        _openExistingPage = new OpenExistingNotesPage();
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        _disposed = true;
+        _openExistingPage?.Dispose();
     }
 
     public override IListItem[] GetItems()
@@ -37,7 +50,7 @@ internal sealed partial class QuickNotesPage : ListPage
                     Subtitle = "Create a new markdown note",
                     Icon = new IconInfo(new IconData("\uE710")), // Add icon
                 },
-                new ListItem(new OpenExistingNotesPage()) 
+                new ListItem(_openExistingPage) 
                 { 
                     Title = "Open Existing", 
                     Subtitle = "Browse and open existing notes",

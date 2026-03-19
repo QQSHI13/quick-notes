@@ -13,11 +13,12 @@ using Microsoft.CommandPalette.Extensions.Toolkit;
 
 namespace QuickNotes;
 
-internal sealed partial class OpenExistingNotesPage : ListPage
+internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
 {
-    private static FileSystemWatcher? _watcher;
-    private static DateTime _lastRefresh = DateTime.MinValue;
+    private FileSystemWatcher? _watcher;
+    private DateTime _lastRefresh = DateTime.MinValue;
     private static readonly TimeSpan _refreshCooldown = TimeSpan.FromSeconds(1);
+    private bool _disposed;
 
     public OpenExistingNotesPage()
     {
@@ -28,10 +29,23 @@ internal sealed partial class OpenExistingNotesPage : ListPage
         SetupFileSystemWatcher();
     }
 
-    private static void SetupFileSystemWatcher()
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        _disposed = true;
+        _watcher?.Dispose();
+        _watcher = null;
+    }
+
+    private void SetupFileSystemWatcher()
     {
         try
         {
+            // Clean up old watcher if directory changed
+            _watcher?.Dispose();
+
             var settings = SettingsService.GetSettings();
             var notesDir = settings.NotesDirectory ?? PathHelper.GetDefaultNotesDirectory();
 
@@ -39,9 +53,6 @@ internal sealed partial class OpenExistingNotesPage : ListPage
             {
                 return;
             }
-
-            // Clean up old watcher if directory changed
-            _watcher?.Dispose();
 
             _watcher = new FileSystemWatcher(notesDir, "*.md")
             {
@@ -64,7 +75,7 @@ internal sealed partial class OpenExistingNotesPage : ListPage
         }
     }
 
-    private static void RequestRefresh()
+    private void RequestRefresh()
     {
         var now = DateTime.Now;
         if (now - _lastRefresh < _refreshCooldown)

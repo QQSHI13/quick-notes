@@ -283,62 +283,17 @@ public sealed partial class SyncAllNoteTitlesCommand : InvokableCommand
 
     private static string? GetSyncedFileName(string filePath)
     {
-        try
-        {
-            // Read first few lines to find the title
-            var lines = File.ReadLines(filePath).Take(10);
-            
-            foreach (var line in lines)
-            {
-                var trimmed = line.Trim();
-                
-                // Look for markdown heading
-                if (trimmed.StartsWith("# ", StringComparison.Ordinal) || trimmed.StartsWith('#'))
-                {
-                    var title = trimmed.TrimStart('#').Trim();
-                    if (!string.IsNullOrEmpty(title) && !IsDefaultTitle(title))
-                    {
-                        // Sanitize filename
-                        var safeName = SanitizeFileName(title);
-                        if (!string.IsNullOrEmpty(safeName))
-                        {
-                            return safeName + ".md";
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Error reading file {filePath}: {ex.Message}");
-        }
-        
-        return null;
+        return NoteTitleHelper.GetSyncedFileName(filePath);
     }
 
     private static bool IsDefaultTitle(string title)
     {
-        // Check if title matches default pattern like "Note 2025-03-10 12:34:56"
-        return title.StartsWith("Note ", StringComparison.OrdinalIgnoreCase) && 
-               Regex.IsMatch(title, @"Note\s+\d{4}-\d{2}-\d{2}");
+        return NoteTitleHelper.IsDefaultTitle(title);
     }
 
     private static string SanitizeFileName(string name)
     {
-        // Remove invalid filename characters
-        var invalidChars = Path.GetInvalidFileNameChars();
-        var safeName = new string(name.Where(c => !invalidChars.Contains(c)).ToArray());
-        
-        // Limit length
-        if (safeName.Length > 50)
-        {
-            safeName = safeName.Substring(0, 50);
-        }
-        
-        // Trim whitespace and dots
-        safeName = safeName.Trim().TrimEnd('.');
-        
-        return safeName;
+        return NoteTitleHelper.SanitizeFileName(name);
     }
 }
 
@@ -408,6 +363,60 @@ public sealed partial class SyncNoteTitleCommand : InvokableCommand
 
     private static string? GetSyncedFileName(string filePath)
     {
+        return NoteTitleHelper.GetSyncedFileName(filePath);
+    }
+
+    private static bool IsDefaultTitle(string title)
+    {
+        return NoteTitleHelper.IsDefaultTitle(title);
+    }
+
+    private static string SanitizeFileName(string name)
+    {
+        return NoteTitleHelper.SanitizeFileName(name);
+    }
+}
+
+public sealed partial class NoOpCommand : InvokableCommand
+{
+    public override ICommandResult Invoke() => CommandResult.Dismiss();
+}
+
+internal static class PathHelper
+{
+    public static string GetDefaultNotesDirectory()
+    {
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            "QuickNotes");
+    }
+
+    public static bool IsValidPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return false;
+
+        try
+        {
+            // Check for invalid characters
+            if (path.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
+                return false;
+
+            // Try to get full path - this validates the path format
+            Path.GetFullPath(path);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+}
+
+internal static class NoteTitleHelper
+{
+    public static string? GetSyncedFileName(string filePath)
+    {
         try
         {
             // Read first few lines to find the title
@@ -441,13 +450,14 @@ public sealed partial class SyncNoteTitleCommand : InvokableCommand
         return null;
     }
 
-    private static bool IsDefaultTitle(string title)
+    public static bool IsDefaultTitle(string title)
     {
+        // Check if title matches default pattern like "Note 2025-03-10 12:34:56"
         return title.StartsWith("Note ", StringComparison.OrdinalIgnoreCase) && 
                Regex.IsMatch(title, @"Note\s+\d{4}-\d{2}-\d{2}");
     }
 
-    private static string SanitizeFileName(string name)
+    public static string SanitizeFileName(string name)
     {
         var invalidChars = Path.GetInvalidFileNameChars();
         var safeName = new string(name.Where(c => !invalidChars.Contains(c)).ToArray());
@@ -462,13 +472,6 @@ public sealed partial class SyncNoteTitleCommand : InvokableCommand
         return safeName;
     }
 }
-
-public sealed partial class NoOpCommand : InvokableCommand
-{
-    public override ICommandResult Invoke() => CommandResult.Dismiss();
-}
-
-internal static class PathHelper
 {
     public static string GetDefaultNotesDirectory()
     {
