@@ -62,6 +62,9 @@ jobs:
         id: create_cert
         shell: pwsh
         run: |
+          $workspace = $env:GITHUB_WORKSPACE
+          Write-Host "Working in workspace: $workspace"
+          
           $cert = New-SelfSignedCertificate `
             -Type Custom `
             -Subject "CN=QQSHI13" `
@@ -72,47 +75,62 @@ jobs:
           
           $thumbprint = $cert.Thumbprint
           $password = ConvertTo-SecureString "TempCert123!" -AsPlainText -Force
-          Export-PfxCertificate -Cert "Cert:\CurrentUser\My\$thumbprint" -FilePath "signing-cert.pfx" -Password $password
-          Export-Certificate -Cert "Cert:\CurrentUser\My\$thumbprint" -FilePath "signing-cert.cer"
+          
+          $certPfxPath = Join-Path $workspace "signing-cert.pfx"
+          $certCerPath = Join-Path $workspace "signing-cert.cer"
+          
+          Export-PfxCertificate -Cert "Cert:\CurrentUser\My\$thumbprint" -FilePath $certPfxPath -Password $password
+          Export-Certificate -Cert "Cert:\CurrentUser\My\$thumbprint" -FilePath $certCerPath
           
           Write-Host "Certificate created with thumbprint: $thumbprint"
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "cert_pfx=signing-cert.pfx"
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "cert_cer=signing-cert.cer"
+          Write-Host "PFX: $certPfxPath"
+          Write-Host "CER: $certCerPath"
+          
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "cert_pfx=$certPfxPath"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "cert_cer=$certCerPath"
+          
+          # List files to verify they exist
+          Write-Host "Files in workspace:"
+          Get-ChildItem $workspace | Select-Object Name
 
       - name: Sign MSIX Bundle
+        id: sign_bundle
         shell: pwsh
         run: |
           $bundlePath = "${{ steps.find_bundle.outputs.bundle_path }}"
-          $certPath = "signing-cert.pfx"
-          $password = ConvertTo-SecureString "TempCert123!" -AsPlainText -Force
+          $certPath = "${{ steps.create_cert.outputs.cert_pfx }}"
           
-          # Find signtool - prefer Windows 10 SDK
-          $signtoolPaths = @(
-            "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe",
-            "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22000.0\x64\signtool.exe",
-            "${env:ProgramFiles(x86)}\Windows Kits\10\bin\x64\signtool.exe"
-          )
+          Write-Host "Bundle path: $bundlePath"
+          Write-Host "Cert path: $certPath"
           
-          $signtool = $signtoolPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+          # Verify files exist
+          if (-not (Test-Path $bundlePath)) {
+            Write-Host "❌ Bundle not found: $bundlePath"
+            exit 1
+          }
+          if (-not (Test-Path $certPath)) {
+            Write-Host "❌ Cert not found: $certPath"
+            exit 1
+          }
+          
+          # Find signtool - use the one from Windows SDK that's guaranteed to be there
+          $signtool = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
+          
+          if (-not (Test-Path $signtool)) {
+            # Try to find ANY signtool
+            $signtool = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Windows Kits" -Recurse -Filter "signtool.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+          }
           
           if (-not $signtool) {
-            Write-Host "⚠️ signtool.exe not found, trying to sign with PowerShell..."
-            # Try alternative signing method
-            try {
-              Add-Type -AssemblyName System.Security
-              $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($certPath, $password)
-              Write-Host "✅ Certificate loaded successfully (thumbprint: $($cert.Thumbprint))"
-              Write-Host "⚠️ But signtool is still needed for MSIX signing - skipping automated signing"
-            } catch {
-              Write-Host "⚠️ Failed to load certificate: $_"
-            }
-            exit 0
+            Write-Host "❌ signtool.exe not found!"
+            exit 1
           }
           
           Write-Host "Using signtool: $signtool"
           
-          # Sign the bundle - fail the step if signing fails
+          # Sign the bundle - VERBOSE output
           & $signtool sign `
+            /v `
             /fd SHA256 `
             /f $certPath `
             /p "TempCert123!" `
@@ -120,12 +138,24 @@ jobs:
             /td SHA256 `
             $bundlePath
           
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "❌ Signing failed with exit code $LASTEXITCODE"
+          $signResult = $LASTEXITCODE
+          Write-Host "Signtool exit code: $signResult"
+          
+          if ($signResult -ne 0) {
+            Write-Host "❌ Signing failed!"
             exit 1
-          } else {
-            Write-Host "✅ Bundle signed successfully!"
           }
+          
+          # Verify the signature
+          Write-Host "`nVerifying signature..."
+          & $signtool verify /pa /v $bundlePath
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ Signature verification failed!"
+            exit 1
+          }
+          
+          Write-Host "✅ Bundle signed and verified successfully!"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
