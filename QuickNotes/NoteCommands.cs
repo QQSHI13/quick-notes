@@ -280,21 +280,6 @@ public sealed partial class SyncAllNoteTitlesCommand : InvokableCommand
 
         return CommandResult.GoBack();
     }
-
-    private static string? GetSyncedFileName(string filePath)
-    {
-        return NoteTitleHelper.GetSyncedFileName(filePath);
-    }
-
-    private static bool IsDefaultTitle(string title)
-    {
-        return NoteTitleHelper.IsDefaultTitle(title);
-    }
-
-    private static string SanitizeFileName(string name)
-    {
-        return NoteTitleHelper.SanitizeFileName(name);
-    }
 }
 
 public sealed partial class SyncNoteTitleCommand : InvokableCommand
@@ -359,21 +344,6 @@ public sealed partial class SyncNoteTitleCommand : InvokableCommand
         }
 
         return CommandResult.GoBack();
-    }
-
-    private static string? GetSyncedFileName(string filePath)
-    {
-        return NoteTitleHelper.GetSyncedFileName(filePath);
-    }
-
-    private static bool IsDefaultTitle(string title)
-    {
-        return NoteTitleHelper.IsDefaultTitle(title);
-    }
-
-    private static string SanitizeFileName(string name)
-    {
-        return NoteTitleHelper.SanitizeFileName(name);
     }
 }
 
@@ -450,11 +420,14 @@ internal static class NoteTitleHelper
         return null;
     }
 
+    // Compiled regex for default title detection (Note YYYY-MM-DD HH:MM:SS)
+    private static readonly Regex DefaultTitleRegex = new(
+        @"^Note\s+\d{4}-\d{2}-\d{2}",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
     public static bool IsDefaultTitle(string title)
     {
-        // Check if title matches default pattern like "Note 2025-03-10 12:34:56"
-        return title.StartsWith("Note ", StringComparison.OrdinalIgnoreCase) && 
-               Regex.IsMatch(title, @"Note\s+\d{4}-\d{2}-\d{2}");
+        return DefaultTitleRegex.IsMatch(title);
     }
 
     public static string SanitizeFileName(string name)

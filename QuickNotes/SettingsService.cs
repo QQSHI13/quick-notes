@@ -110,15 +110,15 @@ public static class SettingsService
         // Ensure settings file exists before trying to read it
         EnsureSettingsFileExists();
         
-        // Read into local variable to avoid race condition
-        var cached = _cachedSettings;
+        // Read cached value with volatile semantics
+        var cached = Volatile.Read(ref _cachedSettings);
         if (cached != null)
             return cached;
 
         lock (_settingsLock)
         {
             // Double-check after acquiring lock
-            cached = _cachedSettings;
+            cached = Volatile.Read(ref _cachedSettings);
             if (cached != null)
                 return cached;
 
@@ -152,7 +152,7 @@ public static class SettingsService
                             settings.RecentNotes = new List<string>();
                         }
 
-                        _cachedSettings = settings;
+                        Volatile.Write(ref _cachedSettings, settings);
                         return _cachedSettings;
                     }
                 }
@@ -162,13 +162,13 @@ public static class SettingsService
                 System.Diagnostics.Debug.WriteLine($"[SETTINGS] Error reading settings: {ex.Message}");
             }
 
-            _cachedSettings = new QuickNotesSettings
+            Volatile.Write(ref _cachedSettings, new QuickNotesSettings
             {
                 NotesDirectory = PathHelper.GetDefaultNotesDirectory(),
                 DefaultEditor = "notepad.exe",
                 RecentNotes = new List<string>(),
                 MaxRecentNotes = 10
-            };
+            });
             return _cachedSettings;
         }
     }
@@ -190,7 +190,9 @@ public static class SettingsService
                 }
 
                 var json = JsonSerializer.Serialize(settings, JsonContext.QuickNotesSettings);
-                File.WriteAllText(SettingsPath, json);
+                var tempPath = SettingsPath + ".tmp";
+                File.WriteAllText(tempPath, json);
+                File.Move(tempPath, SettingsPath, overwrite: true);
             }
             catch (Exception ex)
             {
@@ -203,7 +205,7 @@ public static class SettingsService
     {
         lock (_settingsLock)
         {
-            _cachedSettings = null;
+            Volatile.Write(ref _cachedSettings, null);
         }
     }
 }
