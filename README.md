@@ -144,3 +144,13 @@ Powered by [OpenClaw](https://openclaw.ai)
 ## 🐛 Issues & Feature Requests
 
 Found a bug or have an idea? [Open an issue](https://github.com/QQSHI13/quick-notes/issues) on GitHub!
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=QQSHI13%2FQuickNotes&type=date&legend=top-left">
+ <picture>
+ <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=QQSHI13/QuickNotes&type=date&theme=dark&legend=top-left" />
+ <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=QQSHI13/QuickNotes&type=date&legend=top-left" />
+ <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=QQSHI13/QuickNotes&type=date&legend=top-left" />
+ </picture>
+</a>
