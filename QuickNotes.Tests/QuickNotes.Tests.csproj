@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Match the main project's Windows TFM so the project reference resolves. -->
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <!-- Test assemblies are not platform-specific; avoid the x64/ARM64 matrix. -->
+    <Platforms>AnyCPU</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <IsPackable>false</IsPackable>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Test method names use underscores (xunit convention); CA1707 is noise here. -->
+    <NoWarn>CA1707</NoWarn>
+    <!-- No MSIX packaging for tests. -->
+    <EnableMsixTooling>false</EnableMsixTooling>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\QuickNotes\QuickNotes.csproj" />
+  </ItemGroup>
+
+</Project>

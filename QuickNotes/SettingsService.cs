@@ -1,6 +1,7 @@
-// Copyright (c) Microsoft Corporation
-// The Microsoft Corporation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// This file is derived from the Microsoft PowerToys Command Palette sample,
+// originally licensed under the MIT license.
+// Modifications Copyright (c) QQSHI13, licensed under the GPL-3.0 license.
+// See LICENSE for the full GPL-3.0 text.
 
 #nullable enable
 
@@ -10,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace QuickNotes;
 

@@ -1,6 +1,24 @@
 .vs/
 bin/
 obj/
+
+# MSIX build outputs (do not commit)
 AppPackages/
 BundleArtifacts/
+BundleInput/
+bundle_mapping.txt
+*.msix
+*.msixbundle
+*.appx
+*.appxbundle
+msix_contents/
+
+# Certificates / signing artifacts
+*.pfx
+*.cer
+*.cert
+*.snk
+
+# User-specific files
 *.user
+launchSettings.json

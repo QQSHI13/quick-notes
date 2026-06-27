@@ -1,6 +1,7 @@
-// Copyright (c) Microsoft Corporation
-// The Microsoft Corporation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// This file is derived from the Microsoft PowerToys Command Palette sample,
+// originally licensed under the MIT license.
+// Modifications Copyright (c) QQSHI13, licensed under the GPL-3.0 license.
+// See LICENSE for the full GPL-3.0 text.
 
 #nullable enable
 
@@ -25,8 +26,8 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
         Icon = new IconInfo(new IconData("\uE8E5")); // Open folder icon
         Title = "Open Existing Notes";
         Name = "Open Existing";
-        
-        SetupFileSystemWatcher();
+
+        EnsureWatcherForCurrentDirectory();
     }
 
     public void Dispose()
@@ -39,15 +40,24 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
         _watcher = null;
     }
 
-    private void SetupFileSystemWatcher()
+    private string? _watchedDirectory;
+
+    private void EnsureWatcherForCurrentDirectory()
     {
         try
         {
-            // Clean up old watcher if directory changed
-            _watcher?.Dispose();
-
             var settings = SettingsService.GetSettings();
             var notesDir = settings.NotesDirectory ?? PathHelper.GetDefaultNotesDirectory();
+
+            // Already watching this exact directory? Nothing to do.
+            if (string.Equals(_watchedDirectory, notesDir, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            _watcher?.Dispose();
+            _watcher = null;
+            _watchedDirectory = null;
 
             if (!Directory.Exists(notesDir))
             {
@@ -56,8 +66,8 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
 
             _watcher = new FileSystemWatcher(notesDir, "*.md")
             {
-                NotifyFilter = NotifyFilters.FileName | 
-                               NotifyFilters.LastWrite | 
+                NotifyFilter = NotifyFilters.FileName |
+                               NotifyFilters.LastWrite |
                                NotifyFilters.CreationTime,
                 EnableRaisingEvents = true,
                 IncludeSubdirectories = false
@@ -68,6 +78,7 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
             _watcher.Deleted += (s, e) => RequestRefresh();
             _watcher.Renamed += (s, e) => RequestRefresh();
             _watcher.Changed += (s, e) => RequestRefresh();
+            _watchedDirectory = notesDir;
         }
         catch (Exception ex)
         {
@@ -84,15 +95,18 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
         }
         _lastRefresh = now;
 
-        // The Command Palette will refresh when the user navigates
-        // We can't force a refresh programmatically, but the next GetItems() call
-        // will return updated data
+        // The Command Palette host does not expose a programmatic refresh trigger
+        // for list pages, so we cannot push updates to the view. The watcher is
+        // kept alive only so that the next GetItems() call reflects the current
+        // on-disk state (GetItems re-reads the directory every time it is called).
+        // If a host-side refresh API becomes available, hook it here.
     }
 
     public override IListItem[] GetItems()
     {
-        // Ensure watcher is set up (in case directory changed)
-        SetupFileSystemWatcher();
+        // Re-ensure the watcher points at the currently configured directory.
+        // EnsureWatcherForCurrentDirectory is a no-op if the directory hasn't changed.
+        EnsureWatcherForCurrentDirectory();
 
         var settings = SettingsService.GetSettings();
         var notesDir = settings.NotesDirectory ?? PathHelper.GetDefaultNotesDirectory();
@@ -144,7 +158,7 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
             {
                 var command = new OpenNoteCommand(f.FullPath);
                 var syncCommand = new SyncNoteTitleCommand(f.FullPath);
-                var deleteCommand = new ConfirmDeleteNoteCommand(f.FullPath);
+                var deletePage = new DeleteConfirmationPage(f.FullPath, f.Name);
 
                 return new ListItem(command)
                 {
@@ -158,7 +172,7 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
                             Title = "Sync Title",
                             Icon = new IconInfo(new IconData("\uE8AC")),
                         },
-                        new CommandContextItem(deleteCommand)
+                        new CommandContextItem(deletePage)
                         {
                             Title = "Delete",
                             Icon = new IconInfo(new IconData("\uE74D")),
@@ -189,7 +203,7 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
                     if (!fileInfo.Exists)
                         continue;
 
-                    var title = ExtractTitleFromFile(file);
+                    var title = NoteTitleHelper.ExtractTitle(file);
                     
                     notes.Add(new NoteFile
                     {
@@ -211,40 +225,6 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
         }
 
         return notes;
-    }
-
-    private static string? ExtractTitleFromFile(string filePath)
-    {
-        try
-        {
-            // Read first few lines to find the title
-            var lines = File.ReadLines(filePath).Take(10);
-            
-            foreach (var line in lines)
-            {
-                var trimmed = line.Trim();
-                
-                // Look for markdown heading: # Title or #Title
-                if (trimmed.StartsWith("# ", StringComparison.Ordinal))
-                {
-                    return trimmed.Substring(2).Trim();
-                }
-                if (trimmed.StartsWith('#'))
-                {
-                    var title = trimmed.TrimStart('#').Trim();
-                    if (!string.IsNullOrEmpty(title))
-                    {
-                        return title;
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[EXTRACT TITLE] Error reading file {filePath}: {ex.Message}");
-        }
-        
-        return null;
     }
 
     private sealed class NoteFile

@@ -85,7 +85,7 @@ If you don't have the certificate file, you can extract it from the `.msixbundle
 
 - Windows 11 (for Command Palette support)
 - Visual Studio 2022 with Windows SDK
-- .NET 8.0 or later
+- .NET 10.0 or later
 
 ### Build Steps
 
@@ -97,11 +97,16 @@ cd quick-notes
 # Build the solution
 dotnet build QuickNotes.sln
 
-# Create MSIX bundle
-.\build-bundle.ps1
+# Create an MSIX bundle (Release)
+dotnet build QuickNotes.sln -c Release `
+  -p:GenerateAppxPackageOnBuild=true `
+  -p:AppxBundle=Always `
+  -p:AppxBundlePlatforms="x64|arm64"
 ```
 
-See [BUILD.md](./BUILD.md) for detailed build instructions.
+The generated `.msixbundle` will be under `QuickNotes/AppPackages/`.
+
+> **Note:** `AppPackages/`, `BundleArtifacts/`, `BundleInput/`, and `*.msixbundle` files are build outputs and are git-ignored — do not commit them.
 
 ---
 
@@ -118,7 +123,7 @@ After installation, configure your notes directory:
 
 ## 🛠️ Technologies
 
-- **Framework**: .NET 8.0
+- **Framework**: .NET 10.0
 - **UI**: Windows App SDK / WinUI 3
 - **Platform**: Windows Command Palette (PowerToys)
 - **Language**: C#
@@ -129,7 +134,7 @@ After installation, configure your notes directory:
 
 This project is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
 
-See [LICENSE](./LICENSE) for details.
+See [LICENSE](./LICENSE) for the full text, and [NOTICE](./NOTICE) for third-party attribution. Portions of this project are derived from the Microsoft PowerToys Command Palette sample, which is licensed under the MIT license.
 
 ---
 

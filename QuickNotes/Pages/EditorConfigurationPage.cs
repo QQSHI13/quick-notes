@@ -1,6 +1,7 @@
-// Copyright (c) Microsoft Corporation
-// The Microsoft Corporation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// This file is derived from the Microsoft PowerToys Command Palette sample,
+// originally licensed under the MIT license.
+// Modifications Copyright (c) QQSHI13, licensed under the GPL-3.0 license.
+// See LICENSE for the full GPL-3.0 text.
 
 #nullable enable
 
@@ -20,12 +21,6 @@ internal sealed partial class EditorConfigurationPage : ListPage
         Icon = new IconInfo(new IconData("\uE70A")); // Edit icon
         Title = "Configure Editor";
         Name = "Configure Editor";
-    }
-
-    // Called when user types in the search box - override to capture input
-    public override void UpdateQuery(string query)
-    {
-        _editorPath = query?.Trim() ?? string.Empty;
     }
 
     public override IListItem[] GetItems()

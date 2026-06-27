@@ -1,6 +1,7 @@
-// Copyright (c) Microsoft Corporation
-// The Microsoft Corporation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// This file is derived from the Microsoft PowerToys Command Palette sample,
+// originally licensed under the MIT license.
+// Modifications Copyright (c) QQSHI13, licensed under the GPL-3.0 license.
+// See LICENSE for the full GPL-3.0 text.
 
 #nullable enable
 
@@ -45,10 +46,10 @@ public sealed partial class CreateNewNoteCommand : InvokableCommand
                 Directory.CreateDirectory(notesDir);
             }
 
-            // Create timestamped filename
+            // Create timestamped filename (with collision avoidance so rapid
+            // note creation never silently overwrites an existing note)
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture);
-            var fileName = $"Note_{timestamp}.md";
-            var filePath = Path.Combine(notesDir, fileName);
+            var filePath = PathHelper.GetUniqueFilePath(notesDir, $"Note_{timestamp}", ".md");
 
             // Create file with template
             var template = _template ?? $"# Note {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}\n\n";
@@ -137,33 +138,6 @@ public sealed partial class DeleteNoteCommand : InvokableCommand
     }
 }
 
-public sealed partial class ConfirmDeleteNoteCommand : InvokableCommand
-{
-    private readonly string _filePath;
-
-    public ConfirmDeleteNoteCommand(string filePath)
-    {
-        _filePath = filePath ?? throw new ArgumentNullException(nameof(filePath));
-        Icon = new IconInfo(new IconData("\uE74D")); // Delete icon
-    }
-
-    public override ICommandResult Invoke()
-    {
-        if (!File.Exists(_filePath))
-        {
-            ToastNotificationHelper.ShowError("Note file no longer exists.");
-            return CommandResult.GoBack();
-        }
-
-        var fileName = Path.GetFileName(_filePath);
-        
-        // Show confirmation page (using fallback - ShowPage not available in this SDK version)
-        // return CommandResult.ShowForm(new DeleteConfirmationPage(_filePath, fileName));
-        // Fallback: just go back and let user manually delete
-        return CommandResult.GoBack();
-    }
-}
-
 public sealed partial class ResetDirectoryCommand : InvokableCommand
 {
     public ResetDirectoryCommand()
@@ -222,7 +196,7 @@ public sealed partial class SyncAllNoteTitlesCommand : InvokableCommand
             {
                 try
                 {
-                    var newFileName = GetSyncedFileName(filePath);
+                    var newFileName = NoteTitleHelper.GetSyncedFileName(filePath);
                     if (!string.IsNullOrEmpty(newFileName) && newFileName != Path.GetFileName(filePath))
                     {
                         var newFilePath = Path.Combine(notesDirectory, newFileName);
@@ -302,7 +276,7 @@ public sealed partial class SyncNoteTitleCommand : InvokableCommand
 
         try
         {
-            var newFileName = GetSyncedFileName(_filePath);
+            var newFileName = NoteTitleHelper.GetSyncedFileName(_filePath);
             if (!string.IsNullOrEmpty(newFileName) && newFileName != Path.GetFileName(_filePath))
             {
                 var directory = Path.GetDirectoryName(_filePath);
@@ -381,33 +355,48 @@ internal static class PathHelper
             return false;
         }
     }
+
+    /// <summary>
+    /// Returns a non-colliding file path in <paramref name="directory"/> based on the
+    /// desired <paramref name="baseName"/> and <paramref name="extension"/>. If the
+    /// target exists, appends " (2)", " (3)", ... until a free name is found.
+    /// </summary>
+    public static string GetUniqueFilePath(string directory, string baseName, string extension)
+    {
+        var candidate = Path.Combine(directory, baseName + extension);
+        var counter = 2;
+        while (File.Exists(candidate))
+        {
+            candidate = Path.Combine(directory, $"{baseName} ({counter}){extension}");
+            counter++;
+        }
+        return candidate;
+    }
 }
 
 internal static class NoteTitleHelper
 {
-    public static string? GetSyncedFileName(string filePath)
+    /// <summary>
+    /// Extracts the first markdown heading title from a note file, or null if none found.
+    /// Shared by the note list (display) and the rename/sync commands so both agree.
+    /// </summary>
+    public static string? ExtractTitle(string filePath)
     {
         try
         {
-            // Read first few lines to find the title
             var lines = File.ReadLines(filePath).Take(10);
-            
+
             foreach (var line in lines)
             {
                 var trimmed = line.Trim();
-                
-                // Look for markdown heading
+
+                // Look for markdown heading: "# Title", "## Title", etc.
                 if (trimmed.StartsWith("# ", StringComparison.Ordinal) || trimmed.StartsWith('#'))
                 {
                     var title = trimmed.TrimStart('#').Trim();
-                    if (!string.IsNullOrEmpty(title) && !IsDefaultTitle(title))
+                    if (!string.IsNullOrEmpty(title))
                     {
-                        // Sanitize filename
-                        var safeName = SanitizeFileName(title);
-                        if (!string.IsNullOrEmpty(safeName))
-                        {
-                            return safeName + ".md";
-                        }
+                        return title;
                     }
                 }
             }
@@ -416,8 +405,20 @@ internal static class NoteTitleHelper
         {
             Debug.WriteLine($"Error reading file {filePath}: {ex.Message}");
         }
-        
+
         return null;
+    }
+
+    public static string? GetSyncedFileName(string filePath)
+    {
+        var title = ExtractTitle(filePath);
+        if (string.IsNullOrEmpty(title) || IsDefaultTitle(title))
+        {
+            return null;
+        }
+
+        var safeName = SanitizeFileName(title);
+        return string.IsNullOrEmpty(safeName) ? null : safeName + ".md";
     }
 
     // Compiled regex for default title detection (Note YYYY-MM-DD HH:MM:SS)
@@ -443,35 +444,6 @@ internal static class NoteTitleHelper
         safeName = safeName.Trim().TrimEnd('.');
         
         return safeName;
-    }
-}
-{
-    public static string GetDefaultNotesDirectory()
-    {
-        return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-            "QuickNotes");
-    }
-
-    public static bool IsValidPath(string? path)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-            return false;
-
-        try
-        {
-            // Check for invalid characters
-            if (path.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
-                return false;
-
-            // Try to get full path - this validates the path format
-            Path.GetFullPath(path);
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
     }
 }
 
@@ -523,10 +495,13 @@ internal static class OpenFileHelper
 
 internal static class ToastNotificationHelper
 {
+    // NOTE: These are intentionally stubs that log to Debug output. The Command
+    // Palette SDK does not expose a reliable toast API from the extension host; do
+    // not "fix" these by adding Windows.UI.Notifications calls without verifying
+    // the host context — the extension runs out-of-proc and may not have a toast
+    // activator registered. Keep as debug logging until a host-supported API exists.
     public static void ShowSuccess(string message)
     {
-        // In a real implementation, this would show a Windows toast notification
-        // For now, we use Debug.WriteLine for logging
         Debug.WriteLine($"[SUCCESS] {message}");
     }
 
