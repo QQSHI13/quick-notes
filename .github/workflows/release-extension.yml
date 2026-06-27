@@ -4,9 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g., 0.3.0) - leave blank for auto-detect'
+        description: 'Version (e.g. 0.3.0.3) - leave blank to read from Package.appxmanifest'
         required: false
         type: string
+  push:
+    tags: ['v*']
 
 permissions:
   contents: write
@@ -15,213 +17,86 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
-      - name: Detect Version
-        id: version
+      - name: Read version + publisher from manifest
+        id: meta
         shell: pwsh
         run: |
-          $inputVersion = "${{ github.event.inputs.version }}"
-          if (-not $inputVersion) {
-            [xml]$manifest = Get-Content QuickNotes/Package.appxmanifest
-            $version = $manifest.Package.Identity.Version
-          } else {
-            $version = $inputVersion
-          }
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "version=$version"
-          Write-Host "Detected Version: $version"
+          [xml]$m = Get-Content QuickNotes/Package.appxmanifest
+          $ver = "${{ github.event.inputs.version }}"
+          if (-not $ver) { $ver = $m.Package.Identity.Version }
+          $pub = $m.Package.Identity.Publisher
+          Write-Host "version=$ver  publisher=$pub"
+          "version=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "publisher=$pub" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      - name: Build MSIX Bundle
+      - name: Build MSIX (x64)
         shell: pwsh
         run: |
-          dotnet build QuickNotes.sln -c Release `
+          dotnet build QuickNotes/QuickNotes.csproj -c Release `
+            -p:Platform=x64 `
+            -r win-x64 `
             -p:GenerateAppxPackageOnBuild=true `
-            -p:AppxBundle=Always `
-            -p:AppxBundlePlatforms="x64|arm64"
+            -p:QuickNotesVersion=${{ steps.meta.outputs.version }}
 
-      - name: Find MSIX Bundle
-        id: find_bundle
+      - name: Locate package
+        id: pkg
         shell: pwsh
         run: |
-          $bundle = Get-ChildItem -Path "QuickNotes/AppPackages" -Filter "*.msixbundle" -Recurse | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-          if ($bundle) {
-            Add-Content -Path $env:GITHUB_OUTPUT -Value "bundle_path=$($bundle.FullName)"
-            Add-Content -Path $env:GITHUB_OUTPUT -Value "bundle_name=$($bundle.Name)"
-            Write-Host "Found bundle: $($bundle.FullName)"
-          } else {
-            Write-Host "No bundle found"
-            exit 1
-          }
+          $pkg = Get-ChildItem -Path QuickNotes/AppPackages -Filter '*.msix*' -Recurse |
+                 Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $pkg) { throw "No .msix/.msixbundle produced" }
+          Write-Host "Found: $($pkg.FullName)"
+          "path=$($pkg.FullName)" | Out-File $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      - name: Create Self-Signed Certificate
+      - name: Create self-signed certificate (matches manifest publisher)
         id: create_cert
         shell: pwsh
         run: |
-          $workspace = $env:GITHUB_WORKSPACE
-          Write-Host "Working in workspace: $workspace"
-          
-          # Create a certificate for MSIX signing with proper EKU
-          $certParams = @{
-            Subject = "CN=QQSHI13"
-            CertStoreLocation = "Cert:\CurrentUser\My"
-            KeyAlgorithm = "RSA"
-            KeyLength = 2048
-            KeyUsage = "DigitalSignature"
-            Provider = "Microsoft Software Key Storage Provider"
-          }
-          
-          # Create the certificate
-          $cert = New-SelfSignedCertificate @certParams
-          
-          # Add Code Signing EKU
-          $codeSigningOid = New-Object System.Security.Cryptography.Oid "1.3.6.1.5.5.7.3.3", "Code Signing"
-          $ekuExtension = New-Object System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension @($codeSigningOid), $false
-          
-          # Export and re-import with EKU
-          $thumbprint = $cert.Thumbprint
-          $password = ConvertTo-SecureString "TempCert123!" -AsPlainText -Force
-          
-          $certPfxPath = Join-Path $workspace "signing-cert.pfx"
-          $certCerPath = Join-Path $workspace "signing-cert.cer"
-          
-          Export-PfxCertificate -Cert "Cert:\CurrentUser\My\$thumbprint" -FilePath $certPfxPath -Password $password
-          Export-Certificate -Cert "Cert:\CurrentUser\My\$thumbprint" -FilePath $certCerPath
-          
-          Write-Host "Certificate created with thumbprint: $thumbprint"
-          Write-Host "PFX: $certPfxPath"
-          Write-Host "CER: $certCerPath"
-          
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "cert_pfx=$certPfxPath"
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "cert_cer=$certCerPath"
-          
-          # List files to verify they exist
-          Write-Host "Files in workspace:"
-          Get-ChildItem $workspace | Select-Object Name
+          $pub = '${{ steps.meta.outputs.publisher }}'
+          $pwd = ConvertTo-SecureString 'TempCert123!' -AsPlainText -Force
+          $cert = New-SelfSignedCertificate -Subject $pub `
+            -CertStoreLocation 'Cert:\CurrentUser\My' `
+            -KeyUsage DigitalSignature -Type CodeSigningCert `
+            -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3','2.5.29.19={text}')
+          $pfx = Join-Path $env:GITHUB_WORKSPACE 'QuickNotes_ReleaseCert.pfx'
+          $cer = Join-Path $env:GITHUB_WORKSPACE 'QuickNotes_ReleaseCert.cer'
+          Export-PfxCertificate -Cert "Cert:\CurrentUser\My\$($cert.Thumbprint)" -FilePath $pfx -Password $pwd | Out-Null
+          Export-Certificate -Cert "Cert:\CurrentUser\My\$($cert.Thumbprint)" -FilePath $cer | Out-Null
+          "pfx=$pfx" | Out-File $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "cer=$cer" | Out-File $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      - name: Sign MSIX Bundle
-        id: sign_bundle
+      - name: Sign package
         shell: pwsh
         run: |
-          $bundlePath = "${{ steps.find_bundle.outputs.bundle_path }}"
-          $certPath = "${{ steps.create_cert.outputs.cert_pfx }}"
-          
-          Write-Host "Bundle path: $bundlePath"
-          Write-Host "Cert path: $certPath"
-          
-          # Verify files exist
-          if (-not (Test-Path $bundlePath)) {
-            Write-Host "❌ Bundle not found: $bundlePath"
-            exit 1
-          }
-          if (-not (Test-Path $certPath)) {
-            Write-Host "❌ Cert not found: $certPath"
-            exit 1
-          }
-          
-          # Use Windows SDK signtool (not App Certification Kit)
-          $signtoolPaths = @(
-            "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe",
-            "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22000.0\x64\signtool.exe",
-            "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.19041.0\x64\signtool.exe",
-            "${env:ProgramFiles(x86)}\Windows Kits\10\bin\x64\signtool.exe"
-          )
-          
-          $signtool = $signtoolPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
-          
-          if (-not $signtool) {
-            Write-Host "⚠️ Windows SDK signtool not found, trying to find any signtool..."
-            $signtool = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Windows Kits" -Recurse -Filter "signtool.exe" -ErrorAction SilentlyContinue | 
-              Where-Object { $_.FullName -notmatch "App Certification Kit" } |
-              Select-Object -First 1 -ExpandProperty FullName
-          }
-          
-          if (-not $signtool) {
-            Write-Host "⚠️ No suitable signtool found. Skipping signing but continuing with release."
-            Write-Host "The MSIX bundle will be unsigned but the certificate files will be attached."
-            exit 0
-          }
-          
-          Write-Host "Using signtool: $signtool"
-          
-          # Try to sign the bundle
-          & $signtool sign `
-            /fd SHA256 `
-            /f $certPath `
-            /p "TempCert123!" `
-            /tr http://timestamp.digicert.com `
-            /td SHA256 `
-            $bundlePath
-          
-          $signResult = $LASTEXITCODE
-          Write-Host "Signtool exit code: $signResult"
-          
-          if ($signResult -ne 0) {
-            Write-Host "⚠️ Signing failed with exit code $signResult"
-            Write-Host "The MSIX bundle will be unsigned but the certificate files will be attached."
-            Write-Host "Users can still install by trusting the certificate manually."
-            # Don't fail - continue with release
-            exit 0
-          }
-          
-          Write-Host "✅ Bundle signed successfully!"
+          $signtool = (Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe' |
+                       Sort-Object FullName -Descending | Select-Object -First 1).FullName
+          & $signtool sign /fd SHA256 /f ${{ steps.create_cert.outputs.pfx }} /p 'TempCert123!' `
+            ${{ steps.pkg.outputs.path }} 2>&1 | Select-Object -Last 3
+          $s = Get-AuthenticodeSignature '${{ steps.pkg.outputs.path }}'
+          Write-Host "Signature status: $($s.Status)"
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: QuickNotes-v${{ steps.version.outputs.version }}
+          name: QuickNotes-v${{ steps.meta.outputs.version }}
           path: |
-            ${{ steps.find_bundle.outputs.bundle_path }}
-            ${{ steps.create_cert.outputs.cert_pfx }}
-            ${{ steps.create_cert.outputs.cert_cer }}
+            ${{ steps.pkg.outputs.path }}
+            QuickNotes_ReleaseCert.cer
 
-      - name: Create Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: Quick Notes Extension v${{ steps.version.outputs.version }}
+          tag_name: v${{ steps.meta.outputs.version }}
+          name: Quick Notes v${{ steps.meta.outputs.version }}
           files: |
-            ${{ steps.find_bundle.outputs.bundle_path }}
-            ${{ steps.create_cert.outputs.cert_pfx }}
-            ${{ steps.create_cert.outputs.cert_cer }}
-          body: |
-            ## Quick Notes Extension v${{ steps.version.outputs.version }}
-
-            A Windows Command Palette extension for quick note-taking.
-
-            ### Installation Options
-
-            **Option 1: Microsoft Store (Recommended)**
-            - Fully trusted, automatic updates, no warnings
-            - [Get it on Microsoft Store](https://apps.microsoft.com/store/detail/9P8M54K17J8L?cid=DevShareMCLPCS)
-
-            **Option 2: GitHub Release (This Download)**
-            - ⚠️ Self-signed certificate - follow the steps below
-
-            #### Installing the Self-Signed Version
-
-            Since this release is signed with a self-signed certificate, Windows will show a security warning. To install:
-
-            1. **Download** the `.msixbundle` file
-            2. **Right-click** the file → **Properties** → **Digital Signatures** tab
-            3. Select the signature → Click **Details** → Click **View Certificate**
-            4. Click **Install Certificate** → Select **Local Machine** → Click Next
-            5. Select **Place all certificates in the following store** → Click **Browse**
-            6. Select **Trusted People** → Click OK → Click Next → Click Finish
-            7. Close all dialogs and **double-click the .msixbundle** to install
-
-            ### Features
-            - Create timestamped markdown notes
-            - Browse and open existing notes
-            - Sync note titles with filenames
-            - Configurable notes directory
-
-            ### System Requirements
-            - Windows 10/11 (Build 19041+)
-            - PowerToys with Command Palette enabled
+            ${{ steps.pkg.outputs.path }}
+            QuickNotes_ReleaseCert.cer
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

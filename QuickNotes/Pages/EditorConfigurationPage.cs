@@ -6,7 +6,6 @@
 #nullable enable
 
 using System;
-using System.IO;
 using Microsoft.CommandPalette.Extensions;
 using Microsoft.CommandPalette.Extensions.Toolkit;
 
@@ -14,8 +13,6 @@ namespace QuickNotes;
 
 internal sealed partial class EditorConfigurationPage : ListPage
 {
-    private string _editorPath = string.Empty;
-
     public EditorConfigurationPage()
     {
         Icon = new IconInfo(new IconData("\uE70A")); // Edit icon
@@ -28,89 +25,59 @@ internal sealed partial class EditorConfigurationPage : ListPage
         var settings = SettingsService.GetSettings();
         var currentEditor = settings.DefaultEditor ?? "notepad.exe";
 
-        var items = new System.Collections.Generic.List<IListItem>();
-
-        // Show current editor
-        items.Add(new ListItem(new NoOpCommand())
-        {
-            Title = "Current Editor",
-            Subtitle = currentEditor,
-            Icon = new IconInfo(new IconData("\uE70A")),
-        });
-
-        items.Add(new ListItem(new SetDefaultEditorCommand("notepad.exe", () => RaiseItemsChanged()))
-        {
-            Title = "Use Notepad",
-            Subtitle = "Windows default text editor",
-            Icon = new IconInfo(new IconData("\uE8A5")),
-        });
-
-        items.Add(new ListItem(new SetDefaultEditorCommand("code", () => RaiseItemsChanged()))
-        {
-            Title = "Use VS Code",
-            Subtitle = "Visual Studio Code (if installed)",
-            Icon = new IconInfo(new IconData("\uE7C3")),
-        });
-
-        items.Add(new ListItem(new SetDefaultEditorCommand("notepad++", () => RaiseItemsChanged()))
-        {
-            Title = "Use Notepad++",
-            Subtitle = "Notepad++ (if installed)",
-            Icon = new IconInfo(new IconData("\uE8A5")),
-        });
-
-        // If user typed a path, show option to use it
-        if (!string.IsNullOrWhiteSpace(_editorPath))
-        {
-            var isValidPath = IsValidEditorPath(_editorPath);
-            items.Add(new ListItem(new SetDefaultEditorCommand(_editorPath, () => RaiseItemsChanged()))
+        return
+        [
+            // Show current editor (non-selectable)
+            new ListItem(new NoOpCommand())
             {
-                Title = $"Use: {_editorPath}",
-                Subtitle = isValidPath ? "Click to set as default editor" : "Warning: Path may be invalid",
-                Icon = new IconInfo(new IconData(isValidPath ? "\uE73E" : "\uE711")),
-            });
-        }
-
-        // Instructions for setting a custom path
-        items.Add(new ListItem(new NoOpCommand())
-        {
-            Title = "Set Custom Editor",
-            Subtitle = "Type the full path to your editor above",
-            Icon = new IconInfo(new IconData("\uE8B7")),
-        });
-
-        // Instructions
-        items.Add(new ListItem(new NoOpCommand())
-        {
-            Title = "Instructions",
-            Subtitle = "Type a full path to an .exe file, or use a command in PATH",
-            Icon = new IconInfo(new IconData("\uE897")),
-        });
-
-        return items.ToArray();
-    }
-
-    private static bool IsValidEditorPath(string path)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-            return false;
-
-        // If it's just a command name (no path separators), assume it's valid
-        if (!path.Contains(Path.DirectorySeparatorChar) && !path.Contains('/'))
-            return true;
-
-        try
-        {
-            // Check if file exists
-            return File.Exists(path) && 
-                   (path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||
-                    path.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase) ||
-                    path.EndsWith(".bat", StringComparison.OrdinalIgnoreCase));
-        }
-        catch
-        {
-            return false;
-        }
+                Title = "Current Editor",
+                Subtitle = currentEditor,
+                Icon = new IconInfo(new IconData("\uE70A")),
+            },
+            new ListItem(new SetDefaultEditorCommand("notepad.exe", () => RaiseItemsChanged()))
+            {
+                Title = "Use Notepad",
+                Subtitle = "Windows default text editor",
+                Icon = new IconInfo(new IconData("\uE8A5")),
+            },
+            new ListItem(new SetDefaultEditorCommand("code", () => RaiseItemsChanged()))
+            {
+                Title = "Use VS Code",
+                Subtitle = "Visual Studio Code (if installed)",
+                Icon = new IconInfo(new IconData("\uE7C3")),
+            },
+            new ListItem(new SetDefaultEditorCommand("notepad++", () => RaiseItemsChanged()))
+            {
+                Title = "Use Notepad++",
+                Subtitle = "Notepad++ (if installed)",
+                Icon = new IconInfo(new IconData("\uE8A5")),
+            },
+            new ListItem(new SetDefaultEditorCommand("obsidian", () => RaiseItemsChanged()))
+            {
+                Title = "Use Obsidian",
+                Subtitle = "Obsidian (if installed)",
+                Icon = new IconInfo(new IconData("\uE8A5")),
+            },
+            new ListItem(new SetDefaultEditorCommand("typora", () => RaiseItemsChanged()))
+            {
+                Title = "Use Typora",
+                Subtitle = "Typora (if installed)",
+                Icon = new IconInfo(new IconData("\uE8A5")),
+            },
+            new ListItem(new SetDefaultEditorCommand("wordpad", () => RaiseItemsChanged()))
+            {
+                Title = "Use WordPad",
+                Subtitle = "Windows WordPad",
+                Icon = new IconInfo(new IconData("\uE8A5")),
+            },
+            // For anything else, edit settings.json directly.
+            new ListItem(new EditSettingsCommand())
+            {
+                Title = "Set Custom Path…",
+                Subtitle = "Edit settings.json (defaultEditor field)",
+                Icon = new IconInfo(new IconData("\uE70F")),
+            },
+        ];
     }
 }
 

@@ -93,5 +93,38 @@
     <ILLinkTreatWarningsAsErrors>false</ILLinkTreatWarningsAsErrors>
   </PropertyGroup>
 
+  <!--
+    # Single-source version: inject $(QuickNotesVersion) into the manifest's
+    Identity/@Version at build time, so `dotnet build -p:QuickNotesVersion=x.y.z.w`
+    bumps the produced MSIX. The source Package.appxmanifest is left untouched.
+  -->
+  <Target Name="QuickNotesApplyVersionToManifest"
+          BeforeTargets="_ValidatePresenceOfAppxManifestItems"
+          Condition="'$(QuickNotesVersion)' != ''">
+    <PropertyGroup>
+      <_VersionedManifest>$(IntermediateOutputPath)Package.versioned.appxmanifest</_VersionedManifest>
+    </PropertyGroup>
+    <Copy SourceFiles="Package.appxmanifest"
+          DestinationFiles="$(_VersionedManifest)"
+          SkipUnchangedFiles="false" />
+    <XmlPoke XmlInputPath="$(_VersionedManifest)"
+             Query="/*[local-name()='Package']/*[local-name()='Identity']/@Version"
+             Value="$(QuickNotesVersion)" />
+    <ItemGroup>
+      <AppxManifest Remove="@(AppxManifest)" />
+      <AppxManifest Include="$(_VersionedManifest)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    # Silence APPX1707 for the Command Palette SDK's .winmd. Its COM server is
+    an out-of-proc ExeServer declared explicitly in the manifest, so the winmd
+    needs no in-package implementation DLL and winmd registration harvesting is
+    unnecessary (and only produces a benign APPX1707 warning).
+  -->
+  <PropertyGroup>
+    <AppxHarvestWinmdRegistration>false</AppxHarvestWinmdRegistration>
+  </PropertyGroup>
+
 
 </Project>

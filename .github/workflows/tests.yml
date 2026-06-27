@@ -25,5 +25,7 @@ jobs:
       - name: Build (Debug, x64)
         run: dotnet build QuickNotes.sln -c Debug -p:Platform=x64
 
+      # Run the test project directly with -p:Platform=x64 so its main-project
+      # dependency (an MSIX-packaged WinExe, which cannot be AnyCPU) builds as x64.
       - name: Test
-        run: dotnet test QuickNotes.sln -c Debug -p:Platform=x64 --no-build --verbosity normal
+        run: dotnet test QuickNotes.Tests\QuickNotes.Tests.csproj -c Debug -p:Platform=x64 --no-build --verbosity normal

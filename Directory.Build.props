@@ -6,5 +6,11 @@
     <_SkipUpgradeNetAnalyzersNuGetWarning>true</_SkipUpgradeNetAnalyzersNuGetWarning>
     <NuGetAuditMode>direct</NuGetAuditMode>
     <PlatformTarget>$(Platform)</PlatformTarget>
+
+    <!-- Single source of truth for the MSIX package version. Override on the
+         command line, e.g. `dotnet build -p:QuickNotesVersion=0.3.0.3`. The
+         QuickNotesApplyVersionToManifest target injects this into the built
+         Package.appxmanifest's Identity/@Version. -->
+    <QuickNotesVersion>0.3.0.3</QuickNotesVersion>
   </PropertyGroup>
 </Project>
