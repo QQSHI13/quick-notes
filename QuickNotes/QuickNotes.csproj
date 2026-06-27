@@ -49,6 +49,11 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Expose internal helpers (PathHelper, NoteTitleHelper) to the test project. -->
+    <InternalsVisibleTo Include="QuickNotes.Tests" />
+  </ItemGroup>
+
   <!--
     Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution
     Explorer "Package and Publish" context menu entry to be enabled for this project even if
@@ -59,7 +64,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PublishSingleFile>true</PublishSingleFile>
+    <!-- Single-file is a publish-time concern; only enable it under `dotnet publish`
+         so plain `build`/`test` don't require a RuntimeIdentifier (NETSDK1097). -->
+    <PublishSingleFile Condition="'$(IsPublishing)' == 'true'">true</PublishSingleFile>
     <IsAotCompatible>true</IsAotCompatible>
 
     <CsWinRTAotOptimizerEnabled>true</CsWinRTAotOptimizerEnabled>
