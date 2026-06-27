@@ -22,3 +22,10 @@ msix_contents/
 # User-specific files
 *.user
 launchSettings.json
+
+# Local test/build capture artifacts
+build.log
+build.err
+out.txt
+test_out.txt
+TestResults/
