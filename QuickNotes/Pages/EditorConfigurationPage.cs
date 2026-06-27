@@ -38,21 +38,21 @@ internal sealed partial class EditorConfigurationPage : ListPage
             Icon = new IconInfo(new IconData("\uE70A")),
         });
 
-        items.Add(new ListItem(new SetDefaultEditorCommand("notepad.exe"))
+        items.Add(new ListItem(new SetDefaultEditorCommand("notepad.exe", () => RaiseItemsChanged()))
         {
             Title = "Use Notepad",
             Subtitle = "Windows default text editor",
             Icon = new IconInfo(new IconData("\uE8A5")),
         });
 
-        items.Add(new ListItem(new SetDefaultEditorCommand("code"))
+        items.Add(new ListItem(new SetDefaultEditorCommand("code", () => RaiseItemsChanged()))
         {
             Title = "Use VS Code",
             Subtitle = "Visual Studio Code (if installed)",
             Icon = new IconInfo(new IconData("\uE7C3")),
         });
 
-        items.Add(new ListItem(new SetDefaultEditorCommand("notepad++"))
+        items.Add(new ListItem(new SetDefaultEditorCommand("notepad++", () => RaiseItemsChanged()))
         {
             Title = "Use Notepad++",
             Subtitle = "Notepad++ (if installed)",
@@ -63,7 +63,7 @@ internal sealed partial class EditorConfigurationPage : ListPage
         if (!string.IsNullOrWhiteSpace(_editorPath))
         {
             var isValidPath = IsValidEditorPath(_editorPath);
-            items.Add(new ListItem(new SetDefaultEditorCommand(_editorPath))
+            items.Add(new ListItem(new SetDefaultEditorCommand(_editorPath, () => RaiseItemsChanged()))
             {
                 Title = $"Use: {_editorPath}",
                 Subtitle = isValidPath ? "Click to set as default editor" : "Warning: Path may be invalid",
@@ -117,10 +117,12 @@ internal sealed partial class EditorConfigurationPage : ListPage
 public sealed partial class SetDefaultEditorCommand : InvokableCommand
 {
     private readonly string _editorPath;
+    private readonly Action? _refreshParent;
 
-    public SetDefaultEditorCommand(string editorPath)
+    public SetDefaultEditorCommand(string editorPath, Action? refreshParent = null)
     {
         _editorPath = editorPath ?? throw new ArgumentNullException(nameof(editorPath));
+        _refreshParent = refreshParent;
     }
 
     public override ICommandResult Invoke()
@@ -132,6 +134,8 @@ public sealed partial class SetDefaultEditorCommand : InvokableCommand
             SettingsService.SaveSettings(settings);
 
             ToastNotificationHelper.ShowSuccess($"Editor set to: {_editorPath}");
+            // Refresh the editor page so the new "Current Editor" shows.
+            _refreshParent?.Invoke();
         }
         catch (Exception ex)
         {

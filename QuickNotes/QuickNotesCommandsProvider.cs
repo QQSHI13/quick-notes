@@ -29,8 +29,10 @@ public partial class QuickNotesCommandsProvider : CommandProvider, IDisposable
         return _commands;
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
         _quickNotesPage?.Dispose();
+        base.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

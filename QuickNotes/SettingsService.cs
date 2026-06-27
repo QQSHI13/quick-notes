@@ -42,9 +42,29 @@ public static class SettingsService
     });
 
     private static QuickNotesSettings? _cachedSettings;
+    private static DateTime _cachedSettingsTimeUtc = DateTime.MinValue;
     private static readonly object _settingsLock = new();
 
     public static string GetSettingsPath() => SettingsPath;
+
+    /// <summary>
+    /// Returns true if the settings file has been modified on disk since it was
+    /// cached (e.g. the user edited settings.json by hand), so the cache should be
+    /// discarded and reloaded. Defensive: treats any error as "unchanged".
+    /// </summary>
+    private static bool SettingsFileChangedSinceCache()
+    {
+        try
+        {
+            if (!File.Exists(SettingsPath))
+                return false;
+            return File.GetLastWriteTimeUtc(SettingsPath) > _cachedSettingsTimeUtc;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     public static void EnsureSettingsFileExists()
     {
@@ -114,14 +134,14 @@ public static class SettingsService
         
         // Read cached value with volatile semantics
         var cached = Volatile.Read(ref _cachedSettings);
-        if (cached != null)
+        if (cached != null && !SettingsFileChangedSinceCache())
             return cached;
-
+        // File changed on disk (or first load) -> fall through and reload under the lock.
         lock (_settingsLock)
         {
             // Double-check after acquiring lock
             cached = Volatile.Read(ref _cachedSettings);
-            if (cached != null)
+            if (cached != null && !SettingsFileChangedSinceCache())
                 return cached;
 
             try
@@ -155,6 +175,7 @@ public static class SettingsService
                         }
 
                         Volatile.Write(ref _cachedSettings, settings);
+                        _cachedSettingsTimeUtc = File.GetLastWriteTimeUtc(SettingsPath);
                         return _cachedSettings;
                     }
                 }
@@ -171,6 +192,7 @@ public static class SettingsService
                 RecentNotes = new List<string>(),
                 MaxRecentNotes = 10
             });
+            _cachedSettingsTimeUtc = DateTime.UtcNow;
             return _cachedSettings;
         }
     }
@@ -195,6 +217,7 @@ public static class SettingsService
                 var tempPath = SettingsPath + ".tmp";
                 File.WriteAllText(tempPath, json);
                 File.Move(tempPath, SettingsPath, overwrite: true);
+                _cachedSettingsTimeUtc = File.GetLastWriteTimeUtc(SettingsPath);
             }
             catch (Exception ex)
             {
@@ -208,6 +231,7 @@ public static class SettingsService
         lock (_settingsLock)
         {
             Volatile.Write(ref _cachedSettings, null);
+            _cachedSettingsTimeUtc = DateTime.MinValue;
         }
     }
 }

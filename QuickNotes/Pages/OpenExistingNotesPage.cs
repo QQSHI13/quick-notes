@@ -157,8 +157,8 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
             .Select(f =>
             {
                 var command = new OpenNoteCommand(f.FullPath);
-                var syncCommand = new SyncNoteTitleCommand(f.FullPath);
-                var deletePage = new DeleteConfirmationPage(f.FullPath, f.Name);
+                var syncCommand = new SyncNoteTitleCommand(f.FullPath, () => RaiseItemsChanged());
+                var deletePage = new DeleteConfirmationPage(f.FullPath, f.Name, () => RaiseItemsChanged());
 
                 return new ListItem(command)
                 {
@@ -240,11 +240,13 @@ internal sealed partial class DeleteConfirmationPage : ListPage
 {
     private readonly string _filePath;
     private readonly string _fileName;
+    private readonly Action? _refreshParent;
 
-    public DeleteConfirmationPage(string filePath, string fileName)
+    public DeleteConfirmationPage(string filePath, string fileName, Action? refreshParent = null)
     {
         _filePath = filePath;
         _fileName = fileName;
+        _refreshParent = refreshParent;
         Icon = new IconInfo(new IconData("\uE74D")); // Delete icon
         Title = "Confirm Delete";
         Name = "Confirm Delete";
@@ -254,7 +256,7 @@ internal sealed partial class DeleteConfirmationPage : ListPage
     {
         return new[]
         {
-            new ListItem(new DeleteNoteCommand(_filePath))
+            new ListItem(new DeleteNoteCommand(_filePath, _refreshParent))
             {
                 Title = $"Delete '{_fileName}'",
                 Subtitle = "This action cannot be undone",

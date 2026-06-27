@@ -19,11 +19,13 @@ namespace QuickNotes;
 public sealed partial class CreateNewNoteCommand : InvokableCommand
 {
     private readonly string? _template;
+    private readonly Action? _refreshParent;
 
-    public CreateNewNoteCommand(string? template = null)
+    public CreateNewNoteCommand(string? template = null, Action? refreshParent = null)
     {
         Icon = new IconInfo(new IconData("\uE710")); // Add icon
         _template = template;
+        _refreshParent = refreshParent;
     }
 
     public override ICommandResult Invoke()
@@ -63,6 +65,10 @@ public sealed partial class CreateNewNoteCommand : InvokableCommand
 
             // Track as recent note
             RecentNotesService.AddRecentNote(filePath);
+
+            // Notify any parent list page (e.g. Open Existing) to refresh, since a
+            // new note now exists on disk.
+            _refreshParent?.Invoke();
 
             return CommandResult.Dismiss();
         }
@@ -107,10 +113,12 @@ public sealed partial class OpenNoteCommand : InvokableCommand
 public sealed partial class DeleteNoteCommand : InvokableCommand
 {
     private readonly string _filePath;
+    private readonly Action? _refreshParent;
 
-    public DeleteNoteCommand(string filePath)
+    public DeleteNoteCommand(string filePath, Action? refreshParent = null)
     {
         _filePath = filePath ?? throw new ArgumentNullException(nameof(filePath));
+        _refreshParent = refreshParent;
         Icon = new IconInfo(new IconData("\uE74D")); // Delete icon
     }
 
@@ -128,6 +136,8 @@ public sealed partial class DeleteNoteCommand : InvokableCommand
             File.Delete(_filePath);
             RecentNotesService.RemoveRecentNote(_filePath);
             ToastNotificationHelper.ShowSuccess($"Deleted '{fileName}'");
+            // Tell the parent list to refresh so the deleted note disappears.
+            _refreshParent?.Invoke();
         }
         catch (Exception ex)
         {
@@ -140,8 +150,11 @@ public sealed partial class DeleteNoteCommand : InvokableCommand
 
 public sealed partial class ResetDirectoryCommand : InvokableCommand
 {
-    public ResetDirectoryCommand()
+    private readonly Action? _refreshParent;
+
+    public ResetDirectoryCommand(Action? refreshParent = null)
     {
+        _refreshParent = refreshParent;
         Icon = new IconInfo(new IconData("\uE72C")); // Refresh icon
     }
 
@@ -156,6 +169,8 @@ public sealed partial class ResetDirectoryCommand : InvokableCommand
             SettingsService.SaveSettings(settings);
 
             ToastNotificationHelper.ShowSuccess("Directory reset to default");
+            // Tell the settings page to refresh so the new directory is shown.
+            _refreshParent?.Invoke();
         }
         catch (Exception ex)
         {
@@ -259,10 +274,12 @@ public sealed partial class SyncAllNoteTitlesCommand : InvokableCommand
 public sealed partial class SyncNoteTitleCommand : InvokableCommand
 {
     private readonly string _filePath;
+    private readonly Action? _refreshParent;
 
-    public SyncNoteTitleCommand(string filePath)
+    public SyncNoteTitleCommand(string filePath, Action? refreshParent = null)
     {
         _filePath = filePath ?? throw new ArgumentNullException(nameof(filePath));
+        _refreshParent = refreshParent;
         Icon = new IconInfo(new IconData("\uE8AC")); // Sync icon
     }
 
@@ -296,6 +313,8 @@ public sealed partial class SyncNoteTitleCommand : InvokableCommand
                         File.Move(_filePath, newFilePath);
                         RecentNotesService.UpdateNotePath(_filePath, newFilePath);
                         ToastNotificationHelper.ShowSuccess($"Renamed to '{newFileName}'");
+                        // Tell the parent list to refresh so the renamed note shows its new name.
+                        _refreshParent?.Invoke();
                     }
                     catch (IOException)
                     {

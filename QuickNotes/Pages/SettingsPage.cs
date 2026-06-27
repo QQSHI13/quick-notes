@@ -42,13 +42,13 @@ internal sealed partial class SettingsPage : ListPage
                 Subtitle = "Open settings.json in configured editor",
                 Icon = new IconInfo(new IconData("\uE70F")), // Edit icon
             },
-            new ListItem(new ConfigureEditorCommand()) 
-            { 
-                Title = "Configure Editor", 
+            new ListItem(new EditorConfigurationPage())
+            {
+                Title = "Configure Editor",
                 Subtitle = $"Current: {currentEditor}",
                 Icon = new IconInfo(new IconData("\uE70A")), // Edit icon
             },
-            new ListItem(new ResetDirectoryCommand()) 
+            new ListItem(new ResetDirectoryCommand(() => RaiseItemsChanged())) 
             { 
                 Title = "Reset to Default", 
                 Subtitle = "Set to Documents\\QuickNotes",
@@ -259,23 +259,6 @@ public sealed partial class EditSettingsCommand : InvokableCommand
         {
             ToastNotificationHelper.ShowError($"Failed to open directory: {ex.Message}");
         }
-    }
-}
-
-public sealed partial class ConfigureEditorCommand : InvokableCommand
-{
-    public ConfigureEditorCommand()
-    {
-        Icon = new IconInfo(new IconData("\uE70A")); // Edit icon
-    }
-
-    public override ICommandResult Invoke()
-    {
-        // Show editor configuration (ShowForm not available in this SDK version)
-        // return CommandResult.ShowForm(new EditorConfigurationPage());
-        // Fallback: show message that editor configuration is not available
-        ToastNotificationHelper.ShowInfo("Editor configuration requires updated SDK");
-        return CommandResult.GoBack();
     }
 }
 

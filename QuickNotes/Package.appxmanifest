@@ -11,14 +11,14 @@
   <Identity
     Name="QQSHI13.QuickNotesExtension"
     Publisher="CN=B5D1629E-C0CD-4FF8-AD56-A88FA56FE2C1"
-    Version="0.3.0.0" />
+    Version="0.3.0.2" />
   <!-- When you're ready to publish your extension, you'll need to change the
        Publisher= to match your own identity -->
 
   <Properties>
     <DisplayName>Quick Notes Extension</DisplayName>
 	  <PublisherDisplayName>QQSHI13</PublisherDisplayName>
-    <Logo>Assets\StoreLogo.scale-100.png</Logo>
+    <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
   <Dependencies>
@@ -38,10 +38,10 @@
         DisplayName="Quick Notes Extension"
         Description="Quick Notes Extension"
         BackgroundColor="transparent"
-        Square150x150Logo="Assets\Square150x150Logo.scale-100.png"
-        Square44x44Logo="Assets\Square44x44Logo.scale-100.png">
-        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.scale-100.png"  Square71x71Logo="Assets\SmallTile.scale-100.png" Square310x310Logo="Assets\LargeTile.scale-100.png"/>
-        <uap:SplashScreen Image="Assets\SplashScreen.scale-100.png" />
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"  Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png"/>
+        <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
       <Extensions>
         <com:Extension Category="windows.comServer">
