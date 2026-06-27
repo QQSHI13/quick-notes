@@ -32,3 +32,8 @@ TestResults/
 
 # Scratch icon concept previews (not part of the package)
 icon-previews/
+
+# Store submission build scratch
+store-bundle/
+*.msixbundle
+!QuickNotes/Assets/*.png

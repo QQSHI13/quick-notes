@@ -1,0 +1,74 @@
+name: Store submission package
+
+# Builds an UNSIGNED multi-arch .msixbundle (x64 + arm64) for manual upload
+# to Partner Center. The Store re-signs the package on ingestion, so do NOT
+# sign it. Trigger manually with an optional version override.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g. 0.3.0.5) - blank reads from Package.appxmanifest'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Read version from manifest
+        id: meta
+        shell: pwsh
+        run: |
+          [xml]$m = Get-Content QuickNotes/Package.appxmanifest
+          $ver = "${{ github.event.inputs.version }}"
+          if (-not $ver) { $ver = $m.Package.Identity.Version }
+          Write-Host "version=$ver"
+          "version=$ver" | Out-File $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Build x64 .msix
+        shell: pwsh
+        run: |
+          $ver = '${{ steps.meta.outputs.version }}'
+          dotnet build QuickNotes/QuickNotes.csproj -c Release `
+            -p:Platform=x64 -r win-x64 -p:SelfContained=true `
+            -p:GenerateAppxPackageOnBuild=true -p:AppxBundle=Never `
+            -p:QuickNotesVersion=$ver
+          $f = Get-ChildItem QuickNotes/AppPackages -Filter '*_x64.msix' -Recurse | Select-Object -First 1
+          New-Item -ItemType Directory -Force -Path bundle | Out-Null
+          Copy-Item $f.FullName bundle/
+
+      - name: Build arm64 .msix
+        shell: pwsh
+        run: |
+          $ver = '${{ steps.meta.outputs.version }}'
+          dotnet build QuickNotes/QuickNotes.csproj -c Release `
+            -p:Platform=ARM64 -r win-arm64 -p:SelfContained=true `
+            -p:GenerateAppxPackageOnBuild=true -p:AppxBundle=Never `
+            -p:QuickNotesVersion=$ver
+          $f = Get-ChildItem QuickNotes/AppPackages -Filter '*_arm64.msix' -Recurse | Select-Object -First 1
+          Copy-Item $f.FullName bundle/
+
+      - name: MakeAppx bundle (unsigned, multi-arch)
+        shell: pwsh
+        run: |
+          $ver = '${{ steps.meta.outputs.version }}'
+          $makeappx = (Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin\*\x64\makeappx.exe' |
+                       Sort-Object FullName -Descending | Select-Object -First 1).FullName
+          & $makeappx bundle /d bundle /p "QuickNotes_$ver.msixbundle"
+          Write-Host ('Signature: ' + (Get-AuthenticodeSignature "QuickNotes_$ver.msixbundle").Status)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: QuickNotes-store-${{ steps.meta.outputs.version }}
+          path: QuickNotes_${{ steps.meta.outputs.version }}.msixbundle
