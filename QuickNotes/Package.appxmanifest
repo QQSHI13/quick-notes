@@ -11,7 +11,7 @@
   <Identity
     Name="QQSHI13.QuickNotesExtension"
     Publisher="CN=B5D1629E-C0CD-4FF8-AD56-A88FA56FE2C1"
-    Version="0.3.0.5" />
+    Version="0.3.5.0" />
   <!-- When you're ready to publish your extension, you'll need to change the
        Publisher= to match your own identity -->
 
