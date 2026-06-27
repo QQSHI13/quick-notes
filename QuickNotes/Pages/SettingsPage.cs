@@ -54,13 +54,113 @@ internal sealed partial class SettingsPage : ListPage
                 Subtitle = "Set to Documents\\QuickNotes",
                 Icon = new IconInfo(new IconData("\uE72C")), // Refresh/Reset icon
             },
-            new ListItem(new ValidateSettingsCommand()) 
+            new ListItem(new ValidationResultsPage()) 
             { 
                 Title = "Validate Settings", 
                 Subtitle = "Check configuration for errors",
                 Icon = new IconInfo(new IconData("\uE9D5")), // Check icon
             },
         ];
+    }
+}
+
+internal sealed partial class ValidationResultsPage : ListPage
+{
+    public ValidationResultsPage()
+    {
+        Icon = new IconInfo(new IconData("\uE9D5")); // Check icon
+        Title = "Validate Settings";
+        Name = "Validate Settings";
+    }
+
+    public override IListItem[] GetItems()
+    {
+        var issues = SettingsValidator.GetIssues();
+        if (issues.Count == 0)
+        {
+            return
+            [
+                new ListItem(new NoOpCommand())
+                {
+                    Title = "All settings are valid",
+                    Subtitle = "Nothing to fix.",
+                    Icon = new IconInfo(new IconData("\uE73E")), // Check mark
+                },
+            ];
+        }
+
+        var items = new System.Collections.Generic.List<IListItem>
+        {
+            new ListItem(new NoOpCommand())
+            {
+                Title = $"{issues.Count} issue(s) found",
+                Subtitle = "Review the items below",
+                Icon = new IconInfo(new IconData("\uE711")), // Warning
+            },
+        };
+
+        foreach (var issue in issues)
+        {
+            items.Add(new ListItem(new NoOpCommand())
+            {
+                Title = issue.Title,
+                Subtitle = issue.Detail,
+                Icon = new IconInfo(new IconData("\uE7BA")), // Error/bullet
+            });
+        }
+
+        return items.ToArray();
+    }
+}
+
+internal static class SettingsValidator
+{
+    public sealed record Issue(string Title, string Detail);
+
+    public static System.Collections.Generic.List<Issue> GetIssues()
+    {
+        var issues = new System.Collections.Generic.List<Issue>();
+        var settings = SettingsService.GetSettings();
+
+        // Notes directory
+        if (string.IsNullOrWhiteSpace(settings.NotesDirectory))
+        {
+            issues.Add(new Issue("Notes directory not set", @"Will fall back to Documents\QuickNotes."));
+        }
+        else if (!PathHelper.IsValidPath(settings.NotesDirectory))
+        {
+            issues.Add(new Issue("Invalid notes directory path", settings.NotesDirectory));
+        }
+        else
+        {
+            try
+            {
+                var fullPath = Path.GetFullPath(settings.NotesDirectory);
+                if (!Directory.Exists(fullPath))
+                {
+                    issues.Add(new Issue("Notes directory does not exist", fullPath));
+                }
+            }
+            catch (Exception ex)
+            {
+                issues.Add(new Issue("Could not validate notes directory", ex.Message));
+            }
+        }
+
+        // Editor
+        if (string.IsNullOrWhiteSpace(settings.DefaultEditor))
+        {
+            issues.Add(new Issue("Default editor not set", "Will fall back to notepad.exe."));
+        }
+        else if (settings.DefaultEditor.Contains(Path.DirectorySeparatorChar))
+        {
+            if (!File.Exists(settings.DefaultEditor))
+            {
+                issues.Add(new Issue("Configured editor not found", settings.DefaultEditor));
+            }
+        }
+
+        return issues;
     }
 }
 
@@ -262,70 +362,4 @@ public sealed partial class EditSettingsCommand : InvokableCommand
     }
 }
 
-public sealed partial class ValidateSettingsCommand : InvokableCommand
-{
-    public ValidateSettingsCommand()
-    {
-        Icon = new IconInfo(new IconData("\uE9D5")); // Check icon
-    }
 
-    public override ICommandResult Invoke()
-    {
-        var issues = new System.Collections.Generic.List<string>();
-        var settings = SettingsService.GetSettings();
-
-        // Validate notes directory
-        if (string.IsNullOrWhiteSpace(settings.NotesDirectory))
-        {
-            issues.Add("Notes directory is not set (will use default)");
-        }
-        else if (!PathHelper.IsValidPath(settings.NotesDirectory))
-        {
-            issues.Add($"Invalid notes directory path: {settings.NotesDirectory}");
-        }
-        else
-        {
-            try
-            {
-                var fullPath = Path.GetFullPath(settings.NotesDirectory);
-                if (!Directory.Exists(fullPath))
-                {
-                    issues.Add($"Notes directory does not exist: {fullPath}");
-                }
-            }
-            catch (Exception ex)
-            {
-                issues.Add($"Error validating notes directory: {ex.Message}");
-            }
-        }
-
-        // Validate editor
-        if (string.IsNullOrWhiteSpace(settings.DefaultEditor))
-        {
-            issues.Add("Default editor is not set (will use notepad.exe)");
-        }
-        else if (settings.DefaultEditor.Contains(Path.DirectorySeparatorChar))
-        {
-            if (!File.Exists(settings.DefaultEditor))
-            {
-                issues.Add($"Configured editor not found: {settings.DefaultEditor}");
-            }
-        }
-
-        // Show results
-        if (issues.Count == 0)
-        {
-            ToastNotificationHelper.ShowSuccess("All settings are valid!");
-        }
-        else
-        {
-            ToastNotificationHelper.ShowWarning($"Found {issues.Count} issue(s). Check debug output for details.");
-            foreach (var issue in issues)
-            {
-                Debug.WriteLine($"[SETTINGS VALIDATION] {issue}");
-            }
-        }
-
-        return CommandResult.GoBack();
-    }
-}
