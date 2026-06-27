@@ -11,6 +11,6 @@
          command line, e.g. `dotnet build -p:QuickNotesVersion=0.3.0.3`. The
          QuickNotesApplyVersionToManifest target injects this into the built
          Package.appxmanifest's Identity/@Version. -->
-    <QuickNotesVersion>0.3.0.3</QuickNotesVersion>
+    <QuickNotesVersion>0.3.0.4</QuickNotesVersion>
   </PropertyGroup>
 </Project>

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g. 0.3.0.3) - leave blank to read from Package.appxmanifest'
+        description: 'Version (e.g. 0.3.0.4) - leave blank to read from Package.appxmanifest'
         required: false
         type: string
   push:
@@ -36,24 +36,37 @@ jobs:
           "version=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           "publisher=$pub" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      - name: Build MSIX (x64)
+      - name: Build x64 and stage it
         shell: pwsh
         run: |
+          $ver = '${{ steps.meta.outputs.version }}'
           dotnet build QuickNotes/QuickNotes.csproj -c Release `
-            -p:Platform=x64 `
-            -r win-x64 `
+            -p:Platform=x64 -r win-x64 `
             -p:GenerateAppxPackageOnBuild=true `
-            -p:QuickNotesVersion=${{ steps.meta.outputs.version }}
+            -p:QuickNotesVersion=$ver
+          New-Item -ItemType Directory -Force -Path staging | Out-Null
+          $b = Get-ChildItem -Path QuickNotes/AppPackages -Filter '*_x64.msixbundle' -Recurse |
+               Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $b) { throw 'x64 .msixbundle not produced' }
+          Copy-Item $b.FullName "staging/$($b.Name)"
+          Write-Host "Staged x64: $($b.Name)"
 
-      - name: Locate package
-        id: pkg
+      # arm64 is cross-compiled on the x64 runner; it needs SelfContained=true
+      # (the implicit self-contained setting only applies when RID == host arch).
+      - name: Build arm64 and stage it
         shell: pwsh
         run: |
-          $pkg = Get-ChildItem -Path QuickNotes/AppPackages -Filter '*.msix*' -Recurse |
-                 Sort-Object LastWriteTime -Descending | Select-Object -First 1
-          if (-not $pkg) { throw "No .msix/.msixbundle produced" }
-          Write-Host "Found: $($pkg.FullName)"
-          "path=$($pkg.FullName)" | Out-File $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          $ver = '${{ steps.meta.outputs.version }}'
+          dotnet build QuickNotes/QuickNotes.csproj -c Release `
+            -p:Platform=ARM64 -r win-arm64 `
+            -p:SelfContained=true `
+            -p:GenerateAppxPackageOnBuild=true `
+            -p:QuickNotesVersion=$ver
+          $b = Get-ChildItem -Path QuickNotes/AppPackages -Filter '*_arm64.msixbundle' -Recurse |
+               Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $b) { throw 'arm64 .msixbundle not produced' }
+          Copy-Item $b.FullName "staging/$($b.Name)"
+          Write-Host "Staged arm64: $($b.Name)"
 
       - name: Create self-signed certificate (matches manifest publisher)
         id: create_cert
@@ -72,21 +85,22 @@ jobs:
           "pfx=$pfx" | Out-File $env:GITHUB_OUTPUT -Encoding utf8 -Append
           "cer=$cer" | Out-File $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      - name: Sign package
+      - name: Sign all staged packages
         shell: pwsh
         run: |
           $signtool = (Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe' |
                        Sort-Object FullName -Descending | Select-Object -First 1).FullName
-          & $signtool sign /fd SHA256 /f ${{ steps.create_cert.outputs.pfx }} /p 'TempCert123!' `
-            ${{ steps.pkg.outputs.path }} 2>&1 | Select-Object -Last 3
-          $s = Get-AuthenticodeSignature '${{ steps.pkg.outputs.path }}'
-          Write-Host "Signature status: $($s.Status)"
+          Get-ChildItem 'staging\*.msixbundle' | ForEach-Object {
+            & $signtool sign /fd SHA256 /f ${{ steps.create_cert.outputs.pfx }} /p 'TempCert123!' $_.FullName 2>&1 | Select-Object -Last 2
+            $s = Get-AuthenticodeSignature $_.FullName
+            Write-Host "$($_.Name) -> $($s.Status)"
+          }
 
       - uses: actions/upload-artifact@v4
         with:
           name: QuickNotes-v${{ steps.meta.outputs.version }}
           path: |
-            ${{ steps.pkg.outputs.path }}
+            staging
             QuickNotes_ReleaseCert.cer
 
       - name: Create GitHub Release
@@ -95,7 +109,8 @@ jobs:
           tag_name: v${{ steps.meta.outputs.version }}
           name: Quick Notes v${{ steps.meta.outputs.version }}
           files: |
-            ${{ steps.pkg.outputs.path }}
+            staging/QuickNotes_*_x64.msixbundle
+            staging/QuickNotes_*_arm64.msixbundle
             QuickNotes_ReleaseCert.cer
           generate_release_notes: true
         env:
