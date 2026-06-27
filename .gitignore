@@ -29,3 +29,6 @@ build.err
 out.txt
 test_out.txt
 TestResults/
+
+# Scratch icon concept previews (not part of the package)
+icon-previews/
