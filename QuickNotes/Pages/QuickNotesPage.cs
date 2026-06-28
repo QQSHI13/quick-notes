@@ -45,10 +45,10 @@ internal sealed partial class QuickNotesPage : ListPage, IDisposable
 
             var items = new List<IListItem>
             {
-                new ListItem(new CreateNewNoteCommand()) 
+                new ListItem(new CreateNewPage()) 
                 { 
                     Title = "Create New", 
-                    Subtitle = "Create a new markdown note",
+                    Subtitle = "Choose a template or create a blank note",
                     Icon = new IconInfo(new IconData("\uE710")), // Add icon
                 },
                 new ListItem(_openExistingPage) 

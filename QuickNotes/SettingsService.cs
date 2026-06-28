@@ -19,6 +19,7 @@ public sealed class QuickNotesSettings
 {
     public string? NotesDirectory { get; set; }
     public string? DefaultEditor { get; set; }
+    public string? Template { get; set; }
     public List<string> RecentNotes { get; set; } = new();
     public int MaxRecentNotes { get; set; } = 10;
 }

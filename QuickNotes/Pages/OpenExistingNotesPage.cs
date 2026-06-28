@@ -121,16 +121,29 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
                     Subtitle = $"Directory does not exist: {notesDir}",
                     Icon = new IconInfo(new IconData("\uE711")), // Error/Warning icon
                 },
-                new ListItem(new CreateNewNoteCommand()) 
+                new ListItem(new CreateNewPage()) 
                 { 
                     Title = "Create your first note", 
-                    Subtitle = "Click to create a new note",
+                    Subtitle = "Choose a template or start blank",
                     Icon = new IconInfo(new IconData("\uE710")), // Add icon
                 },
             ];
         }
 
         var noteFiles = GetNoteFiles(notesDir);
+
+        // Filter by search text (if the user typed in the palette search box)
+        try
+        {
+            var searchText = this.SearchText;
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                noteFiles = noteFiles
+                    .Where(nf => MatchesSearch(nf, searchText))
+                    .ToList();
+            }
+        }
+        catch { }
 
         if (noteFiles.Count == 0)
         {
@@ -142,10 +155,10 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
                     Subtitle = "No .md files in your notes directory",
                     Icon = new IconInfo(new IconData("\uE711")), // Error/Warning icon
                 },
-                new ListItem(new CreateNewNoteCommand()) 
+                new ListItem(new CreateNewPage()) 
                 { 
                     Title = "Create your first note", 
-                    Subtitle = "Click to create a new note",
+                    Subtitle = "Choose a template or start blank",
                     Icon = new IconInfo(new IconData("\uE710")), // Add icon
                 },
             ];
@@ -225,6 +238,30 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
         }
 
         return notes;
+    }
+
+    /// <summary>
+    /// Returns true if the note's file name or first 4 KB of content match <paramref name="query"/>.
+    /// </summary>
+    private static bool MatchesSearch(NoteFile note, string query)
+    {
+        // Check file name first
+        if (note.Name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
+            return true;
+        // Check content (first 4 KB for performance)
+        try
+        {
+            using var reader = new StreamReader(note.FullPath);
+            var buf = new char[4096];
+            var read = reader.ReadBlock(buf, 0, buf.Length);
+            if (read > 0)
+            {
+                var content = new string(buf, 0, read);
+                return content.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
+            }
+        }
+        catch { }
+        return false;
     }
 
     private sealed class NoteFile

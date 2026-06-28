@@ -53,8 +53,17 @@ public sealed partial class CreateNewNoteCommand : InvokableCommand
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture);
             var filePath = PathHelper.GetUniqueFilePath(notesDir, $"Note_{timestamp}", ".md");
 
-            // Create file with template
+            // Create file with template (replace placeholders)
             var template = _template ?? $"# Note {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}\n\n";
+            if (!string.IsNullOrEmpty(_template))
+            {
+                var now = DateTime.Now;
+                template = _template
+                    .Replace("{{date}}", now.ToString("yyyy-MM-dd"))
+                    .Replace("{{time}}", now.ToString("HH:mm:ss"))
+                    .Replace("{{datetime}}", now.ToString("yyyy-MM-dd HH:mm:ss"))
+                    .Replace("{{title}}", "Note");
+            }
             File.WriteAllText(filePath, template);
 
             // Open in configured editor

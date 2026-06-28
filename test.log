@@ -1,0 +1,10 @@
+  Determining projects to restore...
+  Restored \\wsl.localhost\Ubuntu\home\qq\.openclaw\workspace\projects\QuickNotes\QuickNotes.Tests\QuickNotes.Tests.csproj (in 516 ms).
+  1 of 2 projects are up-to-date for restore.
+  0 IID calculations/fetches patched
+  QuickNotes -> \\wsl.localhost\Ubuntu\home\qq\.openclaw\workspace\projects\QuickNotes\QuickNotes\bin\x64\Debug\net10.0-windows10.0.26100.0\win-x64\QuickNotes.dll
+  QuickNotes.Tests -> \\wsl.localhost\Ubuntu\home\qq\.openclaw\workspace\projects\QuickNotes\QuickNotes.Tests\bin\x64\Debug\net10.0-windows10.0.26100.0\QuickNotes.Tests.dll
+Test run for \\wsl.localhost\Ubuntu\home\qq\.openclaw\workspace\projects\QuickNotes\QuickNotes.Tests\bin\x64\Debug\net10.0-windows10.0.26100.0\QuickNotes.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:    16, Skipped:     0, Total:    16, Duration: 169 ms - QuickNotes.Tests.dll (net10.0)
