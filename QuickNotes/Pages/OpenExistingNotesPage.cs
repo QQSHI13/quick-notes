@@ -121,11 +121,18 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
                     Subtitle = $"Directory does not exist: {notesDir}",
                     Icon = new IconInfo(new IconData("\uE711")), // Error/Warning icon
                 },
-                new ListItem(new CreateNewPage()) 
+                new ListItem(new CreateNewNoteCommand()) 
                 { 
                     Title = "Create your first note", 
-                    Subtitle = "Choose a template or start blank",
+                    Subtitle = "Click to create a new note",
                     Icon = new IconInfo(new IconData("\uE710")), // Add icon
+                    MoreCommands = [
+                        new CommandContextItem(new CreateNewPage())
+                        {
+                            Title = "Templates\u2026",
+                            Icon = new IconInfo(new IconData("\uE8AC")),
+                        },
+                    ],
                 },
             ];
         }
@@ -155,11 +162,18 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
                     Subtitle = "No .md files in your notes directory",
                     Icon = new IconInfo(new IconData("\uE711")), // Error/Warning icon
                 },
-                new ListItem(new CreateNewPage()) 
+                new ListItem(new CreateNewNoteCommand()) 
                 { 
                     Title = "Create your first note", 
-                    Subtitle = "Choose a template or start blank",
+                    Subtitle = "Click to create a new note",
                     Icon = new IconInfo(new IconData("\uE710")), // Add icon
+                    MoreCommands = [
+                        new CommandContextItem(new CreateNewPage())
+                        {
+                            Title = "Templates\u2026",
+                            Icon = new IconInfo(new IconData("\uE8AC")),
+                        },
+                    ],
                 },
             ];
         }
@@ -252,13 +266,8 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
         try
         {
             using var reader = new StreamReader(note.FullPath);
-            var buf = new char[4096];
-            var read = reader.ReadBlock(buf, 0, buf.Length);
-            if (read > 0)
-            {
-                var content = new string(buf, 0, read);
-                return content.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
-            }
+            var content = reader.ReadToEndAsync().GetAwaiter().GetResult();
+            return content.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
         }
         catch { }
         return false;
