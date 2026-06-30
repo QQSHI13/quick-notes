@@ -14,7 +14,7 @@ using Microsoft.CommandPalette.Extensions.Toolkit;
 
 namespace QuickNotes;
 
-internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
+internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable, IFallbackHandler
 {
     private FileSystemWatcher? _watcher;
     private DateTime _lastRefresh = DateTime.MinValue;
@@ -102,6 +102,12 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
         // If a host-side refresh API becomes available, hook it here.
     }
 
+    void IFallbackHandler.UpdateQuery(string query)
+    {
+        SearchText = query;
+        RaiseItemsChanged();
+    }
+
     public override IListItem[] GetItems()
     {
         // Re-ensure the watcher points at the currently configured directory.
@@ -178,26 +184,59 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable
             ];
         }
 
-        // Sort by last modified (newest first) and create list items
+        // Pinned notes first (by pin time), then rest by last-modified
+        var pinnedPaths = new System.Collections.Generic.HashSet<string>(
+            SettingsService.GetSettings().PinnedNotes ?? new(),
+            StringComparer.OrdinalIgnoreCase);
+
         var items = noteFiles
-            .OrderByDescending(f => f.LastModified)
+            .OrderByDescending(f => pinnedPaths.Contains(f.FullPath))
+                .ThenByDescending(f => f.LastModified)
             .Select(f =>
             {
+                var isPinned = pinnedPaths.Contains(f.FullPath);
                 var command = new OpenNoteCommand(f.FullPath);
                 var syncCommand = new SyncNoteTitleCommand(f.FullPath, () => RaiseItemsChanged());
                 var deletePage = new DeleteConfirmationPage(f.FullPath, f.Name, () => RaiseItemsChanged());
 
+                // Preview: first ~60 chars of content after the heading
+                var preview = "";
+                try
+                {
+                    var content = System.IO.File.ReadAllText(f.FullPath);
+                    var lines = content.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+                    foreach (var ln in lines)
+                    {
+                        var trimmed = ln.Trim();
+                        if (trimmed.Length > 0 && !trimmed.StartsWith("#"))
+                        {
+                            preview = trimmed.Length > 60 ? trimmed[..60] + "\u2026" : trimmed;
+                            break;
+                        }
+                    }
+                }
+                catch { }
+
+                var subtitle = preview.Length > 0
+                    ? $"{preview}"
+                    : $"Modified: {f.LastModified:yyyy-MM-dd HH:mm}";
+
                 return new ListItem(command)
                 {
                     Title = string.IsNullOrEmpty(f.Title) ? f.Name : f.Title,
-                    Subtitle = $"{f.Name} • Modified: {f.LastModified:yyyy-MM-dd HH:mm}",
+                    Subtitle = subtitle,
                     Icon = new IconInfo(new IconData("\uE8A5")), // Document icon
-                    MoreCommands = new[]
+                    MoreCommands = new IContextItem[]
                     {
                         new CommandContextItem(syncCommand)
                         {
                             Title = "Sync Title",
                             Icon = new IconInfo(new IconData("\uE8AC")),
+                        },
+                        new CommandContextItem(new TogglePinNoteCommand(f.FullPath, isPinned, () => RaiseItemsChanged()))
+                        {
+                            Title = isPinned ? "Unpin" : "Pin",
+                            Icon = new IconInfo(new IconData("\uE718")),
                         },
                         new CommandContextItem(deletePage)
                         {

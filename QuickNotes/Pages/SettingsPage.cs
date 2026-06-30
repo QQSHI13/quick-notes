@@ -42,6 +42,12 @@ internal sealed partial class SettingsPage : ListPage
                 Subtitle = "Open settings.json in configured editor",
                 Icon = new IconInfo(new IconData("\uE70F")), // Edit icon
             },
+            new ListItem(new OpenTemplatesDirectoryCommand()) 
+            { 
+                Title = "Open Templates Folder", 
+                Subtitle = "Add .md template files to _templates\\",
+                Icon = new IconInfo(new IconData("\uE8B7")), // Folder icon
+            },
             new ListItem(new EditorConfigurationPage())
             {
                 Title = "Configure Editor",
@@ -238,6 +244,97 @@ public sealed partial class OpenDirectoryCommand : InvokableCommand
             }
         }
 
+        return CommandResult.Dismiss();
+    }
+}
+
+internal static class TemplatesHelper
+{
+    private static readonly string[] BuiltInTemplates = new[]
+    {
+        "Daily Journal.md", @"
+# {{title}}
+
+**Date:** {{date}}
+
+## What I accomplished today
+
+- 
+
+## Notes
+
+- 
+",
+        "Meeting Notes.md", @"
+# {{title}}
+
+**Date:** {{date}}
+**Attendees:**
+
+- 
+
+## Agenda
+
+1. 
+
+## Discussion notes
+
+- 
+
+## Action items
+
+- [ ] 
+",
+    };
+
+    /// <summary>
+    /// Returns the path to the _templates directory, creating it and seeding default
+    /// templates if it doesn't exist.
+    /// </summary>
+    public static string EnsureTemplatesFolder()
+    {
+        var notesDir = SettingsService.GetSettings().NotesDirectory ?? PathHelper.GetDefaultNotesDirectory();
+        var tplDir = System.IO.Path.Combine(notesDir, "_templates");
+        if (!Directory.Exists(tplDir))
+        {
+            Directory.CreateDirectory(tplDir);
+        }
+        // Seed built-in templates if folder is empty
+        if (Directory.GetFiles(tplDir, "*.md").Length == 0)
+        {
+            foreach (var tpl in BuiltInTemplates)
+            {
+                try { System.IO.File.WriteAllText(System.IO.Path.Combine(tplDir, tpl), tpl); } catch { }
+            }
+        }
+        return tplDir;
+    }
+}
+
+public sealed partial class OpenTemplatesDirectoryCommand : InvokableCommand
+{
+    public OpenTemplatesDirectoryCommand()
+    {
+        Icon = new IconInfo(new IconData("\uE8B7")); // Folder icon
+    }
+
+    public override ICommandResult Invoke()
+    {
+        try
+        {
+            var tplDir = TemplatesHelper.EnsureTemplatesFolder();
+            var psi = new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"\"{tplDir}\"",
+                UseShellExecute = true,
+            };
+            Process.Start(psi);
+        }
+        catch (Exception ex)
+        {
+            ToastNotificationHelper.ShowError($"Failed to open templates folder: {ex.Message}");
+        }
         return CommandResult.Dismiss();
     }
 }

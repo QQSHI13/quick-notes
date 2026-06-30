@@ -521,6 +521,39 @@ internal static class OpenFileHelper
     }
 }
 
+public sealed partial class TogglePinNoteCommand : InvokableCommand
+{
+    private readonly string _filePath;
+    private readonly bool _pin;
+    private readonly Action? _refreshParent;
+
+    public TogglePinNoteCommand(string filePath, bool pin, Action? refreshParent = null)
+    {
+        _filePath = filePath ?? throw new ArgumentNullException(nameof(filePath));
+        _pin = pin;
+        _refreshParent = refreshParent;
+        Icon = new IconInfo(new IconData(_pin ? "\uE735" : "\uE718")); // Pin / Unpin icon
+    }
+
+    public override ICommandResult Invoke()
+    {
+        var settings = SettingsService.GetSettings();
+        if (_pin)
+        {
+            if (!settings.PinnedNotes.Contains(_filePath, StringComparer.OrdinalIgnoreCase))
+                settings.PinnedNotes.Add(_filePath);
+        }
+        else
+        {
+            settings.PinnedNotes.RemoveAll(p => p.Equals(_filePath, StringComparison.OrdinalIgnoreCase));
+        }
+        SettingsService.SaveSettings(settings);
+        _refreshParent?.Invoke();
+        ToastNotificationHelper.ShowSuccess(_pin ? "Pinned" : "Unpinned");
+        return CommandResult.GoBack();
+    }
+}
+
 internal static class ToastNotificationHelper
 {
     // NOTE: These are intentionally stubs that log to Debug output. The Command
