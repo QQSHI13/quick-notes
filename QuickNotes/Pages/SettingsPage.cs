@@ -25,17 +25,10 @@ internal sealed partial class SettingsPage : ListPage
     public override IListItem[] GetItems()
     {
         var settings = SettingsService.GetSettings();
-        var currentDir = settings.NotesDirectory ?? PathHelper.GetDefaultNotesDirectory();
         var currentEditor = settings.DefaultEditor ?? "notepad.exe";
 
         return
         [
-            new ListItem(new OpenDirectoryCommand(currentDir)) 
-            { 
-                Title = "Current Directory", 
-                Subtitle = currentDir,
-                Icon = new IconInfo(new IconData("\uE8B7")), // Folder icon
-            },
             new ListItem(new EditSettingsCommand()) 
             { 
                 Title = "Edit Settings", 
@@ -53,12 +46,6 @@ internal sealed partial class SettingsPage : ListPage
                 Title = "Configure Editor",
                 Subtitle = $"Current: {currentEditor}",
                 Icon = new IconInfo(new IconData("\uE70A")), // Edit icon
-            },
-            new ListItem(new ResetDirectoryCommand(() => RaiseItemsChanged())) 
-            { 
-                Title = "Reset to Default", 
-                Subtitle = "Set to Documents\\QuickNotes",
-                Icon = new IconInfo(new IconData("\uE72C")), // Refresh/Reset icon
             },
             new ListItem(new ValidationResultsPage()) 
             { 

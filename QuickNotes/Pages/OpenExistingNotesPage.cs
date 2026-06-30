@@ -233,7 +233,7 @@ internal sealed partial class OpenExistingNotesPage : ListPage, IDisposable, IFa
                             Title = "Sync Title",
                             Icon = new IconInfo(new IconData("\uE8AC")),
                         },
-                        new CommandContextItem(new TogglePinNoteCommand(f.FullPath, isPinned, () => RaiseItemsChanged()))
+                        new CommandContextItem(new TogglePinNoteCommand(f.FullPath, !isPinned, () => RaiseItemsChanged()))
                         {
                             Title = isPinned ? "Unpin" : "Pin",
                             Icon = new IconInfo(new IconData("\uE718")),
