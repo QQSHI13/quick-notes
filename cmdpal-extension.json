@@ -1,0 +1,38 @@
+{
+  "$schema": "https://aka.ms/cmdpal-extensions-manifest-schema",
+  "extensions": [
+    {
+      "id": "QQSHI13.QuickNotesExtension",
+      "name": "Quick Notes",
+      "description": "A Command Palette extension for quickly creating, opening, and managing markdown notes. Features templates, recent notes, pinned notes, and customizable editor support.",
+      "publisher": "QQSHI13",
+      "version": "0.3.6.0",
+      "icon": "https://raw.githubusercontent.com/QQSHI13/quick-notes/main/QuickNotes/Assets/StoreLogo.scale-400.png",
+      "screenshots": [
+        "PLACEHOLDER_SCREENSHOT_URL"
+      ],
+      "packageUrl": "https://github.com/QQSHI13/quick-notes/releases/download/v0.3.6.0/QuickNotes_0.3.6.0_x64.msix",
+      "storeId": "9NQZ3W8J7V2Z",
+      "githubUrl": "https://github.com/QQSHI13/quick-notes",
+      "wingetId": "QQSHI13.QuickNotes",
+      "tags": [
+        "notes",
+        "markdown",
+        "productivity",
+        "command-palette"
+      ],
+      "minimumWindowsVersion": "10.0.19041.0",
+      "releaseDate": "2026-06-30",
+      "changelog": [
+        "Fixed settings file auto-creation on first run",
+        "Cleaned up settings UI",
+        "Fixed pin logic"
+      ],
+      "author": {
+        "name": "QQSHI13",
+        "url": "https://github.com/QQSHI13",
+        "avatar": "https://avatars.githubusercontent.com/u/127574818"
+      }
+    }
+  ]
+}
