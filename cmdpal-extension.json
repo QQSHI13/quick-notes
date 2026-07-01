@@ -9,7 +9,7 @@
       "version": "0.3.6.0",
       "icon": "https://raw.githubusercontent.com/QQSHI13/quick-notes/main/QuickNotes/Assets/StoreLogo.scale-400.png",
       "screenshots": [
-        "PLACEHOLDER_SCREENSHOT_URL"
+        "https://raw.githubusercontent.com/QQSHI13/quick-notes/main/docs/screenshots/quicknotes-screenshot.png"
       ],
       "packageUrl": "https://github.com/QQSHI13/quick-notes/releases/download/v0.3.6.0/QuickNotes_0.3.6.0_x64.msix",
       "storeId": "9NQZ3W8J7V2Z",
