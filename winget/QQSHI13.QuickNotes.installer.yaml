@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json
+
 PackageIdentifier: QQSHI13.QuickNotes
 PackageVersion: 0.3.6.0
 MinimumOSVersion: 10.0.19041.0
@@ -18,4 +20,4 @@ Installers:
     InstallerSha256: 89044EC7FF27250BD638D14F37A5917513BCEA8072618B498E4FCAF4529794B9
     SignatureSha256: 
 ManifestType: installer
-ManifestVersion: 1.9.0
+ManifestVersion: 1.10.0
