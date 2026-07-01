@@ -11,11 +11,11 @@ PackageFamilyName: QQSHI13.QuickNotesExtension_fm33c5d2aeb2k
 Installers:
   - Architecture: x64
     InstallerUrl: https://github.com/QQSHI13/quick-notes/releases/download/v0.3.6.0/QuickNotes_0.3.6.0_x64.msix
-    InstallerSha256: 53C9CFEF62701E04F00FEB4A09ED03790C9F8A8133DA7486289EFBF9BC6B45D9
+    InstallerSha256: 0A1A29046EAE4A21E312049DF2E0FD48AE4AA183AAD3C659F3597695A4002BFE
     SignatureSha256: 
   - Architecture: arm64
-    InstallerUrl: https://github.com/QQSHI13/quick-notes/releases/download/v0.3.6.0/QuickNotes_0.3.6.0_arm64.msix
-    InstallerSha256: 9AE3EBF7AE294F061C5C4820FAB6972B45AAB7F08A3A4FF4FA0331FBD6CFB2A3
+    InstallerUrl: https://github.com/QQSHI13/quick-notes/releases/download/v0.3.6.0/QuickNotes_0.3.6.0_arm64.msixbundle
+    InstallerSha256: 89044EC7FF27250BD638D14F37A5917513BCEA8072618B498E4FCAF4529794B9
     SignatureSha256: 
 ManifestType: installer
 ManifestVersion: 1.9.0
