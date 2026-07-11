@@ -68,7 +68,7 @@ jobs:
           & $makeappx bundle /d bundle /p "QuickNotes_$ver.msixbundle"
           Write-Host ('Signature: ' + (Get-AuthenticodeSignature "QuickNotes_$ver.msixbundle").Status)
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: QuickNotes-store-${{ steps.meta.outputs.version }}
           path: QuickNotes_${{ steps.meta.outputs.version }}.msixbundle
