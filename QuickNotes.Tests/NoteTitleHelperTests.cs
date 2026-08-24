@@ -71,6 +71,40 @@ public class NoteTitleHelperTests
         Assert.Equal(50, NoteTitleHelper.SanitizeFileName(longTitle).Length);
     }
 
+    [Theory]
+    [InlineData("NUL")]
+    [InlineData("CON")]
+    [InlineData("PRN")]
+    [InlineData("AUX")]
+    [InlineData("COM1")]
+    [InlineData("LPT9")]
+    [InlineData("nul")]
+    [InlineData("Com1")]
+    public void SanitizeFileName_SuffixesReservedDeviceNames(string reserved)
+    {
+        // Windows cannot create a file whose base name is a DOS device name.
+        Assert.Equal(reserved + "_", NoteTitleHelper.SanitizeFileName(reserved));
+    }
+
+    [Theory]
+    [InlineData("CONTACT")]
+    [InlineData("Console Notes")]
+    [InlineData("COM10")]
+    [InlineData("NULL")]
+    public void SanitizeFileName_LeavesNonReservedNamesAlone(string title)
+    {
+        // Only exact device names are reserved; names that merely start with one
+        // must not be altered.
+        Assert.Equal(title, NoteTitleHelper.SanitizeFileName(title));
+    }
+
+    [Fact]
+    public void SanitizeFileName_ReservedNameWithInvalidCharsIsStillSuffixed()
+    {
+        // "N|U|L" sanitizes down to "NUL", which is reserved.
+        Assert.Equal("NUL_", NoteTitleHelper.SanitizeFileName("N|U|L"));
+    }
+
     [Fact]
     public void GetSyncedFileName_ReturnsSanitizedName()
     {

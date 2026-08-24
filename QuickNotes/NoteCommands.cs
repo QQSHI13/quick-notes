@@ -6,6 +6,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -459,18 +460,35 @@ internal static class NoteTitleHelper
         return DefaultTitleRegex.IsMatch(title);
     }
 
+    // Names Windows reserves for DOS devices. A file cannot be created with one of
+    // these as its base name, with or without an extension, so a note titled
+    // "# NUL" would otherwise produce an unwritable path.
+    private static readonly HashSet<string> ReservedDeviceNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "CON", "PRN", "AUX", "NUL",
+        "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+    };
+
     public static string SanitizeFileName(string name)
     {
         var invalidChars = Path.GetInvalidFileNameChars();
         var safeName = new string(name.Where(c => !invalidChars.Contains(c)).ToArray());
-        
+
         if (safeName.Length > 50)
         {
             safeName = safeName.Substring(0, 50);
         }
         
         safeName = safeName.Trim().TrimEnd('.');
-        
+
+        // Suffix reserved device names so the resulting path is creatable. Callers
+        // treat an empty result as "no usable name", so leave that case untouched.
+        if (safeName.Length > 0 && ReservedDeviceNames.Contains(safeName))
+        {
+            safeName += "_";
+        }
+
         return safeName;
     }
 }

@@ -26,6 +26,8 @@ launchSettings.json
 # Local test/build capture artifacts
 build.log
 build.err
+test.log
+test.err
 out.txt
 test_out.txt
 TestResults/
